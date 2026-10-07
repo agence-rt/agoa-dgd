@@ -1,1 +1,1 @@
-Déploiement n°3 — Publication sur GitHub : mise à jour automatique au démarrage, écran de démarrage AGOA DGD, installateur en français, menu Aide › Rechercher une mise à jour
+Déploiement n°4 — Format de fichier .dgd (double-clic pour ouvrir) ; Fichier › Enregistrer sous (Ctrl+Maj+S), PDF joints compris ; conversion des anciens fichiers .json
