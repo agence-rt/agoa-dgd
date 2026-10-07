@@ -1,0 +1,74 @@
+{
+  "name": "agoa-dgd",
+  "productName": "AGOA DGD",
+  "version": "1.2.0",
+  "description": "AGOA DGD — suivi financier des chantiers : lots, avenants, factures, honoraires d'architecte et décompte général.",
+  "author": "SELARL Rémi Thollet Architecte",
+  "main": "main.js",
+  "agoa": {
+    "deploiement": 3
+  },
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win",
+    "deploy": "node scripts/deploy.js"
+  },
+  "build": {
+    "appId": "fr.remithollet.suivifinancier",
+    "productName": "AGOA DGD",
+    "artifactName": "AGOA-DGD-Setup-${version}.${ext}",
+    "directories": {
+      "buildResources": "build",
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "app/**/*",
+      "build/icon.ico",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        "nsis"
+      ],
+      "icon": "build/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowElevation": true,
+      "allowToChangeInstallationDirectory": true,
+      "include": "build/installer.nsh",
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "AGOA DGD",
+      "runAfterFinish": true,
+      "installerLanguages": [
+        "fr_FR"
+      ],
+      "language": "1036",
+      "multiLanguageInstaller": true,
+      "deleteAppDataOnUninstall": false
+    },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "agence-rt",
+        "repo": "agoa-dgd",
+        "releaseType": "release"
+      }
+    ]
+  },
+  "dependencies": {
+    "electron-updater": "^6.3.9"
+  },
+  "devDependencies": {
+    "electron": "^33.2.1",
+    "electron-builder": "^25.1.8"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/agence-rt/agoa-dgd.git"
+  }
+}

@@ -1,0 +1,1045 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>AGOA DGD — Suivi financier des chantiers</title>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; worker-src 'self' blob:">
+<script src="vendor/xlsx.full.min.js"></script>
+<script src="vendor/pdf.min.js"></script>
+<style>
+@font-face{font-family:"Archivo";font-style:normal;font-weight:100 900;font-stretch:62% 125%;src:url(fonts/archivo-latin-wdth-normal.woff2) format("woff2-variations");unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+@font-face{font-family:"Archivo";font-style:normal;font-weight:100 900;font-stretch:62% 125%;src:url(fonts/archivo-latin-ext-wdth-normal.woff2) format("woff2-variations");unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF}
+:root{
+  --paper:#EEF0EC; --surface:#FFFFFF; --sunk:#F6F7F4; --ink:#1C2B33; --muted:#5E6B70; --line:#D3D8D2;
+  --accent:#1F5F5B; --accent-soft:#D9E8E4; --ochre:#9A6511; --ochre-soft:#F3E6CF; --neg:#A63D32; --neg-soft:#F4DEDA;
+  --bar-eng:#C7D3CF; --bar-fac:#1F5F5B; --green:#2E7D32;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --paper:#141B1E; --surface:#1C2529; --sunk:#172024; --ink:#E4EAEA; --muted:#93A2A5; --line:#2F3C40;
+  --accent:#6FB8AE; --accent-soft:#1E3734; --ochre:#E0A84A; --ochre-soft:#3A2E1A; --neg:#E58A7E; --neg-soft:#3D2420;
+  --bar-eng:#334247; --bar-fac:#6FB8AE; --green:#7CC47F; color-scheme:dark;}}
+:root[data-theme="dark"]{
+  --paper:#141B1E; --surface:#1C2529; --sunk:#172024; --ink:#E4EAEA; --muted:#93A2A5; --line:#2F3C40;
+  --accent:#6FB8AE; --accent-soft:#1E3734; --ochre:#E0A84A; --ochre-soft:#3A2E1A; --neg:#E58A7E; --neg-soft:#3D2420;
+  --bar-eng:#334247; --bar-fac:#6FB8AE; --green:#7CC47F; color-scheme:dark;}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:"Archivo",system-ui,-apple-system,"Segoe UI",sans-serif;font-size:15px;line-height:1.45;font-variant-numeric:tabular-nums}
+button,input,select{font:inherit;color:inherit}
+a{color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.wrap{max-width:1320px;margin:0 auto;padding:20px 20px 60px}
+
+/* top bar */
+.top{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:18px}
+.top .brand{font-stretch:75%;font-weight:700;font-size:15px;letter-spacing:.01em;color:var(--muted)}
+.top .spacer{flex:1}
+.sync{font-size:13px;color:var(--muted)}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:6px;padding:7px 12px;cursor:pointer;white-space:nowrap}
+.btn:hover{border-color:var(--muted)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--surface);font-weight:600}
+.btn.ghost{background:transparent;border-color:transparent;color:var(--muted)}
+.btn.ghost:hover{color:var(--ink);border-color:var(--line)}
+.btn.danger{color:var(--neg)}
+.btn.small{padding:4px 9px;font-size:13px}
+
+/* project list */
+.plist-head{display:flex;align-items:end;justify-content:space-between;gap:16px;margin:10px 0 18px;flex-wrap:wrap}
+.plist-head h1{margin:0;font-stretch:70%;font-weight:800;font-size:clamp(34px,5vw,56px);line-height:.95;letter-spacing:-.01em}
+.plist{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
+.pcard{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:16px 18px;cursor:pointer;text-align:left;display:flex;flex-direction:column;gap:10px}
+.pcard:hover{border-color:var(--accent)}
+.pcard .pname{font-stretch:75%;font-weight:750;font-size:24px;line-height:1.05}
+.pcard .pmeta{color:var(--muted);font-size:13px}
+.pcard .pnums{display:flex;justify-content:space-between;font-size:13px;color:var(--muted)}
+.pcard .pnums b{color:var(--ink);font-weight:600}
+.empty{background:var(--surface);border:1px dashed var(--line);border-radius:8px;padding:40px;text-align:center;color:var(--muted)}
+
+/* project shell */
+.phead{display:flex;align-items:flex-end;gap:20px;flex-wrap:wrap;margin-bottom:20px;padding-bottom:16px;border-bottom:2px solid var(--ink)}
+.phead .title{flex:1;min-width:260px}
+.phead .kicker{font-size:13px;color:var(--muted);margin-bottom:4px}
+.phead h1{margin:0;font-stretch:65%;font-weight:800;font-size:clamp(40px,6.5vw,76px);line-height:.9;letter-spacing:-.015em;word-break:break-word}
+.phead .sub{margin-top:8px;color:var(--muted);font-size:14px}
+.phead .ref{display:grid;grid-template-columns:auto auto;gap:2px 14px;font-size:13px;align-self:end}
+.phead .ref span:nth-child(odd){color:var(--muted)}
+.shell{display:grid;grid-template-columns:200px minmax(0,1fr);gap:24px;align-items:start}
+.nav{position:sticky;top:calc(env(safe-area-inset-top,0px) + 12px);display:flex;flex-direction:column;gap:2px}
+.nav .grp{font-size:12px;color:var(--muted);margin:14px 10px 4px}
+.nav .grp:first-child{margin-top:0}
+.nav button{display:block;width:100%;text-align:left;border:0;background:transparent;border-radius:6px;padding:8px 10px;cursor:pointer}
+.nav button:hover{background:var(--surface)}
+.nav button[aria-current="true"]{background:var(--surface);box-shadow:inset 3px 0 0 var(--accent);font-weight:600}
+.nav .ln{display:flex;justify-content:space-between;gap:8px}
+.nav .ln small{color:var(--muted);font-weight:400;white-space:nowrap}
+.nav .mini{height:3px;background:var(--bar-eng);border-radius:2px;margin-top:6px;overflow:hidden}
+.nav .mini i{display:block;height:100%;background:var(--bar-fac)}
+.nav .add{color:var(--accent)}
+
+/* panels */
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:18px 20px;margin-bottom:18px}
+.panel h2{margin:0 0 4px;font-size:20px;font-stretch:85%;font-weight:700}
+.panel h3{margin:0 0 10px;font-size:16px;font-weight:650}
+.panel .lede{margin:0 0 14px;color:var(--muted);font-size:14px;max-width:70ch}
+.panel-head{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:10px}
+.fields{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px 16px}
+.field label{display:block;font-size:12.5px;color:var(--muted);margin-bottom:3px}
+.field input,.field select{width:100%;border:1px solid var(--line);background:var(--sunk);border-radius:5px;padding:7px 9px}
+.field input:focus,.field select:focus{background:var(--surface);border-color:var(--accent);outline:none}
+
+/* tables */
+.tscroll{overflow-x:auto;margin:0 -4px;padding:0 4px}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th{font-weight:600;font-size:12.5px;color:var(--muted);text-align:left;padding:6px 6px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:3px 6px;border-bottom:1px solid var(--line);vertical-align:middle}
+th.n,td.n{text-align:right}
+td.calc{color:var(--muted);white-space:nowrap}
+td.ttc{font-weight:700;color:var(--ink)}
+tr.total td{border-bottom:0;border-top:2px solid var(--ink);font-weight:650;padding-top:8px;color:var(--ink)}
+td input,td select{width:100%;border:1px solid transparent;background:transparent;border-radius:4px;padding:5px 6px;min-width:0}
+td input:hover,td select:hover{border-color:var(--line)}
+td input:focus,td select:focus{border-color:var(--accent);background:var(--sunk);outline:none}
+td input.n{text-align:right;padding-left:2px;padding-right:4px}
+td .x{border:0;background:transparent;color:var(--muted);cursor:pointer;padding:4px 6px;border-radius:4px;font-size:16px;line-height:1}
+td .x:hover{color:var(--neg);background:var(--neg-soft)}
+tr.av td,tr.av td.calc,tr.av td input,tr.av td select,tr.av .ro{color:var(--green)}
+tr.mv td,tr.mv td.calc,tr.mv td input,tr.mv td select,tr.mv .ro{color:var(--neg)}
+.addrow{margin-top:10px}
+.tag{display:inline-block;font-size:12px;padding:1px 7px;border-radius:10px;background:var(--sunk);color:var(--muted);white-space:nowrap}
+table.fit .tag{white-space:normal}
+table.fit .btn{white-space:normal;text-align:left}
+.tag.ok{background:var(--accent-soft);color:var(--accent)}
+.tag.warn{background:var(--ochre-soft);color:var(--ochre)}
+.tag.neg{background:var(--neg-soft);color:var(--neg)}
+table.fit{table-layout:fixed}
+table.fit th{white-space:normal;vertical-align:bottom}
+table.fit td.calc{overflow:hidden;text-overflow:ellipsis}
+td input[type="date"]{padding:5px 2px}
+.c-AE{width:72px}.c-num{width:60px}.c-code{width:152px}.c-date{width:122px}.c-ht{width:120px}.c-tva{width:78px}.c-mt{width:102px}.c-ttc{width:124px}.c-x{width:30px}
+.c-sit{width:40px}.c-mis{width:98px}.c-rg{width:50px}.c-etat{width:104px}
+.c-lot{width:17%}.c-ent{width:13%}
+th.n,td.n{white-space:nowrap}
+table.wide{width:max(100%,780px)}
+table.xwide{width:max(100%,860px)}
+.ro{display:block;padding:4px 6px;white-space:normal}
+.ro.n{text-align:right;white-space:nowrap}
+.lothead{display:flex;align-items:center;gap:22px;margin-bottom:18px}
+.lothead .ltitle{flex:1;min-width:0}
+.lothead h2{display:flex;align-items:baseline;gap:2px;flex-wrap:wrap}
+.lothead input{font:inherit;color:inherit;border:1px solid transparent;background:transparent;border-radius:6px;padding:0 6px;margin:0;min-width:0}
+.lothead input:hover{border-color:var(--line)}
+.lothead input:focus{border-color:var(--accent);background:var(--surface);outline:none}
+.lothead input::placeholder{color:var(--muted);opacity:.6}
+.lothead .in-num{width:1.5em;text-align:center;padding:0 2px}
+.lothead .in-int{flex:1;min-width:5em}
+.lothead .ent .in-ent{width:100%;max-width:560px;margin-left:-6px}
+.lothead .ro{display:inline;padding:0}
+.lothead .lact{align-self:flex-start}
+.logo.left{align-items:flex-start}
+.logo.left .logo-drop{padding:18px 16px;min-width:150px}
+.idrow{display:flex;gap:24px;align-items:center}
+.idrow .fields{flex:1}
+.lothead h2{margin:0 0 2px -6px;font-stretch:78%;font-size:clamp(32px,4vw,44px);font-weight:780;line-height:1.02}
+.lothead .ent{font-size:16px}
+.phead.compact h1{font-size:30px;line-height:1}
+.phead.compact .kicker{margin-bottom:2px}
+.phead .hlogo{display:block;order:-1;max-height:96px;max-width:300px;object-fit:contain;background:#FFFFFF;padding:4px;border-radius:4px;align-self:center}
+.phead.compact .hlogo{max-height:80px;max-width:260px}
+.lothead .ent{color:var(--muted);margin-top:2px}
+.logo{display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0}
+.logo img{display:block;max-height:104px;max-width:320px;object-fit:contain;background:#FFFFFF;padding:4px;border-radius:4px}
+.logo .acts{display:flex;gap:2px}
+.logo-drop{border:1px dashed var(--muted);border-radius:6px;padding:24px 22px;min-width:200px;background:transparent;color:var(--muted);cursor:pointer;font-size:13px}
+.logo-drop:hover{color:var(--ink);border-color:var(--ink)}
+body.pdf .logo .acts,body.pdf .logo-drop{display:none}
+body.pdf .lothead h2{font-size:32px;gap:10px;margin-left:0}
+body.pdf .lothead .ent .in-ent,body.pdf .lothead .ent .ro{margin-left:0}
+body.pdf .lothead .ent{font-size:15px}
+/* impression (export PDF natif) */
+.print-page+.print-page{break-before:page}
+body.pdf tr,body.pdf .balance,body.pdf .barrow,body.pdf .phead,body.pdf .lothead,body.pdf .idrow,body.pdf .legend{break-inside:avoid}
+body.pdf h2,body.pdf .panel-head{break-after:avoid}
+@media print{html,body{background:#FFFFFF!important}.toast,.viewer{display:none!important}}
+body.pdf .keep{break-inside:avoid}
+html.printing{--paper:#FFFFFF;background:#FFFFFF}
+.welcome{max-width:640px;margin:8vh auto 0;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:32px 34px}
+.welcome h1{margin:0 0 10px;font-stretch:70%;font-weight:800;font-size:44px;line-height:1}
+.welcome p{color:var(--muted);margin:0 0 22px}
+.welcome .acts{display:flex;gap:10px;flex-wrap:wrap}
+.banner{background:var(--ochre-soft);color:var(--ink);border-radius:8px;padding:12px 16px;margin-bottom:16px;display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+.banner span{flex:1;min-width:240px}
+.filechip{font-size:13px;color:var(--muted);border:1px solid var(--line);border-radius:6px;padding:5px 10px;background:var(--surface);cursor:pointer;max-width:340px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.filechip:hover{color:var(--ink);border-color:var(--muted)}
+.pdf-title{font-stretch:80%;font-weight:750;font-size:26px;margin:0 0 14px}
+body.pdf{--paper:#FFFFFF;background:#FFFFFF}
+body.pdf .wrap{width:1120px;max-width:none;padding:0}
+body.pdf .phead h1{font-size:46px;line-height:1.05}
+body.pdf .phead.compact h1{font-size:24px}
+body.pdf .pdf-title{font-size:22px}
+body.pdf .balance strong{font-size:17px}
+body.pdf table,body.pdf table.wide,body.pdf table.xwide{width:100%;font-size:12.5px}
+body.pdf .c-code{width:120px}body.pdf .c-date{width:86px}body.pdf .c-ht{width:110px}body.pdf .c-tva{width:56px}body.pdf .c-mt{width:96px}body.pdf .c-ttc{width:106px}
+body.pdf .ro{white-space:nowrap}
+body.pdf td.lib .ro{white-space:normal}
+body.pdf .barrow{grid-template-columns:200px minmax(0,1fr) 180px}
+body.pdf .top,body.pdf .nav,body.pdf .addrow,body.pdf .x,body.pdf .btn.danger,body.pdf .seg{display:none!important}
+body.pdf .shell{grid-template-columns:1fr}
+body.pdf .c-x{width:4px}
+body.pdf .tscroll{overflow:visible}
+body.pdf .phead{margin-bottom:14px}
+
+/* balance strip */
+.balance{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:0;border:1px solid var(--line);border-radius:8px;overflow:hidden;margin-bottom:18px;background:var(--surface)}
+.balance div{padding:11px 12px;border-right:1px solid var(--line);min-width:0}
+.balance div:last-child{border-right:0}
+.balance small{display:block;color:var(--muted);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.balance strong{display:block;font-size:clamp(15px,1.45vw,19px);font-weight:650;margin-top:2px;white-space:nowrap}
+.balance em{display:block;font-style:normal;font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.balance .hl{background:var(--accent-soft)}
+.neg{color:var(--neg)} .pos{color:var(--accent)} .warn{color:var(--ochre)}
+
+/* bars */
+.bars{display:flex;flex-direction:column;gap:14px}
+.barrow{display:grid;grid-template-columns:minmax(150px,220px) minmax(0,1fr) 190px;gap:14px;align-items:center}
+.barrow .lbl b{display:block;font-weight:650}
+.barrow .lbl small{color:var(--muted)}
+.track{position:relative;height:22px;background:var(--sunk);border-radius:3px}
+.track .eng{position:absolute;inset:0 auto 0 0;background:var(--bar-eng);border-radius:3px}
+.track .fac{position:absolute;top:5px;bottom:5px;left:0;background:var(--bar-fac);border-radius:2px}
+.track .fac.over{background:var(--neg)}
+.track .tick{position:absolute;top:-4px;bottom:-4px;width:2px;background:var(--ochre)}
+.barrow .val{text-align:right;font-size:13px;white-space:nowrap}
+.barrow .val b{display:block;font-size:15px}
+.legend{display:flex;gap:18px;flex-wrap:wrap;font-size:12.5px;color:var(--muted);margin-top:14px}
+.legend i{display:inline-block;width:14px;height:10px;border-radius:2px;margin-right:6px;vertical-align:-1px}
+
+.alerts{display:flex;flex-direction:column;gap:8px}
+.alert{display:flex;gap:10px;align-items:baseline;padding:9px 12px;border-radius:6px;background:var(--ochre-soft);color:var(--ink);font-size:14px}
+.alert.neg{background:var(--neg-soft)}
+.alert b{white-space:nowrap}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:6px;overflow:hidden}
+.seg button{border:0;background:transparent;padding:5px 11px;cursor:pointer;font-size:13px}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--surface)}
+.note{font-size:13px;color:var(--muted)}
+/* pièces jointes PDF */
+.c-pdf{width:58px;text-align:center}
+.pdfbtn{white-space:nowrap;border:1px solid var(--line);background:var(--surface);border-radius:4px;padding:2px 6px;font-size:11.5px;font-weight:650;cursor:pointer;color:var(--muted);letter-spacing:.02em}
+.pdfbtn:hover{border-color:var(--accent);color:var(--accent)}
+.pdfbtn.has{background:var(--accent);border-color:var(--accent);color:var(--surface)}
+.pdfbtn.has.on{outline:2px solid var(--ochre);outline-offset:1px}
+.pdfbtn.add{border-style:dashed}
+tr.viewing td{background:var(--accent-soft)}
+body.pdf .c-pdf{display:none!important}
+.viewer[hidden]{display:none!important}
+.viewer{position:fixed;top:0;right:0;bottom:0;width:min(38vw,640px);background:var(--surface);border-left:1px solid var(--line);box-shadow:-8px 0 24px rgba(0,0,0,.08);display:flex;flex-direction:column;z-index:15;padding-top:env(safe-area-inset-top,0px)}
+.viewer header{display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid var(--line)}
+.viewer header .vt{flex:1;min-width:0}
+.viewer header .vt b{display:block;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.viewer header .vt small{color:var(--muted);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
+.viewer .vtools{display:flex;gap:4px;align-items:center;padding:6px 12px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.viewer .vtools .sp{flex:1}
+.viewer .vbody{flex:1;overflow:auto;background:var(--sunk);padding:12px}
+.viewer .vbody canvas{display:block;margin:0 auto 12px;background:#FFFFFF;box-shadow:0 1px 4px rgba(0,0,0,.15);max-width:none}
+.viewer .vmsg{color:var(--muted);text-align:center;padding:40px 10px}
+body.viewing .wrap{margin-right:min(38vw,640px);max-width:none;padding-left:16px;padding-right:16px}
+body.viewing .shell{grid-template-columns:minmax(0,1fr)}
+body.viewing table.wide,body.viewing table.xwide{width:max(100%,690px)}
+body.viewing .col-tva{display:none}
+body.viewing .c-code{width:128px}body.viewing .c-date{width:112px}body.viewing .c-num{width:50px}body.viewing .c-AE{width:64px}body.viewing .c-ht{width:112px}body.viewing .c-tva{width:70px}
+body.viewing .nav{position:static;flex-direction:row;overflow-x:auto;gap:4px;padding-bottom:6px}
+body.viewing .nav .grp,body.viewing .nav .mini{display:none}
+body.viewing .nav button{width:auto;white-space:nowrap}
+body.viewing .balance{grid-auto-flow:row;grid-template-columns:repeat(3,minmax(0,1fr))}
+body.viewing .balance div:nth-child(3n){border-right:0}
+body.viewing .balance div:nth-child(n+4){border-top:1px solid var(--line)}
+body.viewing .lothead h2{font-size:32px}
+body.viewing .phead.compact .hlogo{max-height:56px}
+@media (max-width:900px){.viewer{width:100vw}body.viewing .wrap{margin-right:0}}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--surface);padding:9px 16px;border-radius:6px;font-size:14px;z-index:20}
+
+@media (max-width:1100px){
+  .shell{grid-template-columns:1fr}
+  .nav{position:static;flex-direction:row;overflow-x:auto;gap:4px;padding-bottom:6px}
+  .nav .grp{display:none}
+  .nav button{width:auto;white-space:nowrap}
+  .nav .mini{display:none}
+}
+@media (max-width:860px){
+  .balance{grid-auto-flow:row;grid-template-columns:repeat(3,minmax(0,1fr))}
+  .balance div:nth-child(3n){border-right:0}
+  .balance div:nth-child(n+4){border-top:1px solid var(--line)}
+  .idrow{flex-direction:column;align-items:flex-start}
+  .barrow{grid-template-columns:1fr;gap:6px}
+  .barrow .val{text-align:left}
+}
+@media (prefers-reduced-motion:no-preference){.track .fac{transition:width .35s ease}}
+</style>
+</head>
+<body>
+<div class="wrap" id="app"></div>
+<input type="file" id="pdffile" accept="application/pdf,.pdf" hidden>
+<aside class="viewer" id="viewer" hidden aria-label="Visualisation du PDF"></aside>
+<input type="file" id="logofile" accept="image/png,image/jpeg,image/webp,image/svg+xml,image/gif" hidden>
+<script>
+"use strict";
+/* ---------- utilitaires ---------- */
+const uid = () => Math.random().toString(36).slice(2,10);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const fmtE = (v, dec=2) => (isFinite(v)?v:0).toLocaleString("fr-FR",{minimumFractionDigits:dec,maximumFractionDigits:dec}).replace(/\u202f/g,"\u00a0") + "\u00a0€";
+const fmtK = v => fmtE(v,0);
+const fmtP = v => (isFinite(v)?v*100:0).toLocaleString("fr-FR",{maximumFractionDigits:1}).replace(/\u202f/g,"\u00a0") + "\u00a0%";
+const numIn = v => (v===0||v)? String(v).replace(".",",") : "";
+const parseNum = s => { const t=String(s).replace(/[\s\u00a0€]/g,"").replace(",","."); if(t==="") return 0; const n=parseFloat(t); return isFinite(n)?n:0; };
+const fmtD = d => d ? new Date(d+"T00:00:00").toLocaleDateString("fr-FR") : "";
+const TVAS = [0,0.055,0.1,0.2];
+const ENG_TYPES = {AE:"Acte d'engagement", AV:"Avenant", MV:"Moins-value"};
+const ENG_SHORT = {AE:"AE", AV:"AV", MV:"MV"};
+const clone = o => JSON.parse(JSON.stringify(o));
+
+function newLot(n){ return {id:uid(), num:n, intitule:"", entreprise:"", engagements:[], factures:[]}; }
+function newProject(){
+  return {
+    id:uid(), nom:"Nouvelle opération", adresse:"", objet:"", code:"", indice:"A",
+    moa:"", gestionnaire:"", architecte:"", statut:"En cours", dateEdition:new Date().toISOString().slice(0,10),
+    lots:[newLot(1)],
+    archi:{taux:0.10, tva:0.10, etudes:[], jalons:[
+      {id:uid(),libelle:"Échéance 1",pct:0.30},{id:uid(),libelle:"Échéance 2",pct:0.20},
+      {id:uid(),libelle:"Échéance 3",pct:0.20},{id:uid(),libelle:"Échéance 4",pct:0.20},
+      {id:uid(),libelle:"Échéance 5",pct:0.10}], factures:[]},
+    updatedAt:Date.now()
+  };
+}
+
+/* ---------- calculs ---------- */
+function signedHT(e){ const v=+e.ht||0; return e.type==="MV" ? -Math.abs(v) : v; }
+function lotCalc(l){
+  const r={ini:0,iniT:0,av:0,avT:0,mv:0,mvT:0,fac:0,facT:0};
+  for(const e of l.engagements){ const h=signedHT(e), t=h*(1+(+e.tva||0));
+    if(e.type==="AV"){r.av+=h;r.avT+=t}else if(e.type==="MV"){r.mv+=h;r.mvT+=t}else{r.ini+=h;r.iniT+=t} }
+  for(const f of l.factures){ const h=+f.ht||0; r.fac+=h; r.facT+=h*(1+(+f.tva||0)); }
+  r.marche=r.ini+r.av+r.mv; r.marcheT=r.iniT+r.avT+r.mvT;
+  r.reste=r.marche-r.fac; r.resteT=r.marcheT-r.facT;
+  r.pct = r.marche ? r.fac/r.marche : 0;
+  return r;
+}
+function projCalc(p){
+  const lots=p.lots.map(l=>({l,c:lotCalc(l)}));
+  const T={ini:0,iniT:0,av:0,avT:0,mv:0,mvT:0,marche:0,marcheT:0,fac:0,facT:0};
+  for(const {c} of lots) for(const k in T) T[k]+=c[k];
+  T.reste=T.marche-T.fac; T.resteT=T.marcheT-T.facT; T.pct=T.marche?T.fac/T.marche:0;
+  const a=p.archi, tv=1+(+a.tva||0);
+  const A={};
+  A.base=T.marche;
+  A.total=A.base*(+a.taux||0);                       // honoraires globaux = taux × travaux
+  A.etudes=a.etudes.reduce((s,e)=>s+(+e.ht||0),0);   // forfait études, inclus dans le global
+  A.exec=A.total-A.etudes;                            // exécution = global − études déjà comptées
+  A.facEtudes=a.factures.filter(f=>f.mission==="etudes").reduce((s,f)=>s+(+f.ht||0),0);
+  A.facExec=a.factures.filter(f=>f.mission!=="etudes").reduce((s,f)=>s+(+f.ht||0),0);
+  A.fac=A.facEtudes+A.facExec;
+  A.facT=a.factures.reduce((s,f)=>s+(+f.ht||0)*(1+(+f.tva||0)),0);
+  A.totalT=A.total*tv; A.reste=A.total-A.fac; A.resteT=A.totalT-A.facT;
+  A.exigible=A.total*T.pct; A.ecart=A.fac-A.exigible;
+  A.pctExec=A.exec?A.facExec/A.exec:0; A.pct=A.total?A.fac/A.total:0;
+  A.jalonsSum=a.jalons.reduce((s,j)=>s+(+j.pct||0),0);
+  return {lots,T,A};
+}
+
+/* ---------- état & stockage ---------- */
+const S = { projects:{}, view:{pid:null, tab:"synth"}, ttc:false, ready:false, canWrite:true, pendingRender:false,
+  file:null, lockedBy:null, error:null, assets:null };
+let saveTimer=null, saving=Promise.resolve(), dirty=false;
+function persist(p){
+  if(p) p.updatedAt=Date.now();
+  if(!S.file||!S.canWrite) return;
+  dirty=true; setSync("Enregistrement…");
+  clearTimeout(saveTimer);
+  saveTimer=setTimeout(()=>{
+    saveTimer=null;
+    const snapshot=clone(S.projects);
+    saving=saving.then(()=>window.desktop.write(snapshot)).then(r=>{
+      if(r&&r.ok){ if(!saveTimer) dirty=false; setSync("Enregistré"); }
+      else setSync("Échec de l'enregistrement : "+((r&&r.error)||"erreur inconnue"));
+    });
+  },600);
+}
+function flushSave(){ if(saveTimer){ clearTimeout(saveTimer); saveTimer=null; const snap=clone(S.projects); saving=saving.then(()=>window.desktop.write(snap)); } return saving; }
+function setSync(t){ const el=document.getElementById("sync"); if(el) el.textContent=t; S.syncText=t; }
+function toast(msg){ const d=document.createElement("div"); d.className="toast"; d.textContent=msg; document.body.appendChild(d); setTimeout(()=>d.remove(),3200); }
+
+function loadState(st){
+  S.error=null; S.lockedBy=null;
+  if(!st||!st.path){ S.file=null; S.projects={}; S.ready=true; render(); return; }
+  S.file={path:st.path, name:st.name};
+  if(st.error){ S.error=st.error; S.projects={}; S.ready=true; S.canWrite=false; render(); return; }
+  const c=st.content||{};
+  S.projects = c.projects && typeof c.projects==="object" ? c.projects : {};
+  if(S.view.pid && !S.projects[S.view.pid]) S.view={pid:null,tab:"synth"};
+  if(st.lock){ S.lockedBy=st.lock; S.canWrite=false; }
+  else { S.canWrite=true; window.desktop.takeLock(); }
+  S.ready=true; setSync(S.canWrite?"Enregistré":"Lecture seule");
+  render();
+}
+async function chooseFile(mode){
+  if(dirty) await saving;
+  const st=await window.desktop.choose(mode);
+  if(st){ S.view={pid:null,tab:"synth"}; loadState(st); }
+}
+async function initDesktop(){
+  if(!window.desktop){ S.error="Cette page doit être ouverte depuis l'application AGOA DGD."; S.ready=true; render(); return; }
+  // pièces jointes PDF : stockées dans un dossier voisin du fichier de données
+  S.assets={
+    upload: async (file)=>{ const r=await window.desktop.pdfSave(file.name, await file.arrayBuffer()); if(!r||!r.ok) throw {code:(r&&r.code)||"upstream_error"}; return {id:r.id, sizeBytes:r.size}; },
+    delete: id=>window.desktop.pdfDelete(id)
+  };
+  window.desktop.onDataChanged(content=>{
+    if(dirty){ toast("Le fichier a été modifié sur un autre poste pendant votre saisie : vos modifications sont conservées."); return; }
+    S.projects = content && content.projects ? content.projects : {};
+    if(S.view.pid && !S.projects[S.view.pid]) S.view={pid:null,tab:"synth"};
+    toast("Données mises à jour depuis le fichier partagé"); requestRender();
+  });
+  window.desktop.onChangeFile(()=>chooseFile("open"));
+  loadState(await window.desktop.state());
+}
+
+/* ---------- accès par chemin ---------- */
+function resolve(root, path){
+  const segs=path.split("."); let cur=root;
+  for(let i=0;i<segs.length-1;i++){
+    const s=segs[i];
+    cur = Array.isArray(cur) ? cur.find(x=>x.id===s) : cur[s];
+    if(cur==null) return null;
+  }
+  return {obj:cur, key:segs[segs.length-1]};
+}
+function cur(){ return S.projects[S.view.pid]; }
+
+/* ---------- rendu ---------- */
+function requestRender(){
+  const a=document.activeElement;
+  if(a && a.matches && a.matches("input,select") && a.dataset.p){ S.pendingRender=true; return; }
+  render();
+}
+function render(){
+  S.pendingRender=false;
+  const app=document.getElementById("app");
+  const focusKey=document.activeElement&&document.activeElement.dataset? document.activeElement.dataset.p : null;
+  const p=cur();
+  if(S.view.pid && !p) S.view.pid=null;
+  app.innerHTML = topBar() + (p ? projectView(p) : listView());
+  if(S.viewer && (!p || S.viewer.pid!==p.id)){ S.viewer=null; const v=document.getElementById("viewer"); v.hidden=true; v.innerHTML=""; document.body.classList.remove("viewing"); }
+  if(focusKey){ const el=app.querySelector(`[data-p="${CSS.escape(focusKey)}"]`); if(el) el.focus(); }
+}
+function topBar(){
+  return `<div class="top">
+    ${S.view.pid?`<button class="btn ghost" data-act="home">← Toutes les opérations</button>`:`<span class="brand">Suivi financier des chantiers</span>`}
+    <span class="spacer"></span>
+    <span class="sync" id="sync">${esc(S.syncText||"")}</span>
+    ${S.file?`<button class="filechip" data-act="changefile" title="${esc(S.file.path)} — cliquer pour changer de fichier">${esc(S.file.name)}</button>`:""}
+    ${S.view.pid && S.file?`<button class="btn" data-act="pdf" data-all="0">PDF de cette page</button><button class="btn" data-act="pdf" data-all="1">PDF du dossier complet</button><button class="btn" data-act="export">Exporter en Excel</button>`:""}
+  </div>`;
+}
+function listView(){
+  const arr=Object.values(S.projects).sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0));
+  const cards=arr.map(p=>{ const {T,A}=projCalc(p);
+    return `<button class="pcard" data-act="open" data-id="${p.id}">
+      <span class="pname">${esc(p.nom)}</span>
+      <span class="pmeta">${esc([p.adresse,p.objet].filter(Boolean).join(" — "))||"Sans adresse"} <span class="tag ${p.statut==="DGD signé"?"ok":""}">${esc(p.statut)}</span></span>
+      <span class="track"><span class="eng" style="width:100%"></span><span class="fac ${T.pct>1?"over":""}" style="width:${Math.min(T.pct,1)*100}%"></span></span>
+      <span class="pnums"><span>Marchés <b>${fmtK(T.marche)} HT</b></span><span>Facturé <b>${fmtP(T.pct)}</b></span></span>
+      <span class="pnums"><span>${p.lots.length} lot${p.lots.length>1?"s":""}</span><span>Honoraires facturés <b>${fmtP(A.pct)}</b></span></span>
+    </button>`;}).join("");
+  if(S.ready && !S.file) return `<div class="welcome"><h1>AGOA DGD</h1>
+      <p>Les opérations sont enregistrées dans un fichier de données. Placez-le dans votre dossier Dropbox pour que vos collègues puissent le reprendre depuis leur poste. Les PDF joints sont rangés dans un dossier à côté de ce fichier.</p>
+      ${S.error?`<p class="neg">${esc(S.error)}</p>`:""}
+      <div class="acts"><button class="btn primary" data-act="openfile">Ouvrir un fichier de données</button><button class="btn" data-act="createfile">Créer un nouveau fichier</button></div>
+      <p style="margin:18px 0 0;font-size:13px">Pour reprendre les opérations saisies dans la version en ligne, utilisez son bouton « Exporter les données », puis ouvrez ici le fichier obtenu.</p></div>`;
+  const banner = S.error ? `<div class="banner"><span>${esc(S.error)}</span><button class="btn" data-act="openfile">Ouvrir un autre fichier</button></div>`
+    : S.lockedBy ? `<div class="banner"><span>Ce fichier est ouvert par ${esc(S.lockedBy.user)} sur le poste ${esc(S.lockedBy.host)}. Vous êtes en lecture seule pour ne pas écraser son travail.</span><button class="btn" data-act="forceedit">Modifier quand même</button></div>` : "";
+  return `${banner}<div class="plist-head"><h1>Opérations<br>en exécution</h1>
+    <span style="display:flex;gap:8px;flex-wrap:wrap">${S.canWrite?`<button class="btn primary" data-act="newproj">Créer une opération</button>`:""}</span></div>
+    ${!S.ready?`<div class="empty">Chargement des opérations…</div>`:
+      arr.length?`<div class="plist">${cards}</div>`:`<div class="empty">Aucune opération pour l'instant. Créez-en une pour saisir ses lots, ses actes d'engagement et ses factures.</div>`}`;
+}
+function projectView(p){
+  const C=projCalc(p); const tab=S.view.tab;
+  const nav=`<nav class="nav" aria-label="Sections de l'opération">
+    <div class="grp">Vue d'ensemble</div>
+    ${navBtn("synth","Synthèse")}
+    <div class="grp">Lots</div>
+    ${C.lots.map(({l,c})=>`<button data-act="tab" data-tab="lot:${l.id}" aria-current="${tab==="lot:"+l.id}">
+      <span class="ln"><span>Lot ${esc(l.num)} ${esc(l.intitule)}</span><small>${fmtP(c.pct)}</small></span>
+      <span class="mini"><i style="width:${Math.min(c.pct,1)*100}%"></i></span></button>`).join("")}
+    ${S.canWrite?`<button class="add" data-act="addlot">+ Ajouter un lot</button>`:""}
+    <div class="grp">Maîtrise d'œuvre</div>
+    ${navBtn("archi","Architecte")}
+    <div class="grp">Opération</div>
+    ${navBtn("infos","Informations")}
+  </nav>`;
+  let body="";
+  if(tab==="synth") body=synthView(p,C);
+  else if(tab==="archi") body=archiView(p,C);
+  else if(tab==="infos") body=infosView(p);
+  else if(tab.startsWith("lot:")){ const l=p.lots.find(x=>x.id===tab.slice(4)); body = l? lotView(p,l) : synthView(p,C); }
+  const tabLabel = tab==="synth"?"Synthèse":tab==="archi"?"Honoraires architecte":tab==="infos"?"Informations de l'opération":(()=>{const l=p.lots.find(x=>"lot:"+x.id===tab);return l?`Lot ${l.num} — ${l.intitule}${l.entreprise?" ("+l.entreprise+")":""}`:"";})();
+  if(S.pdf && !tab.startsWith("lot:")) body=`<div class="pdf-title">${esc(tabLabel)}</div>`+body;
+  return `<header class="phead ${tab==="synth"?"":"compact"}">
+    <div class="title"><div class="kicker">Décompte général ${p.statut==="DGD signé"?"définitif":"provisoire"}</div>
+      <h1>${esc(p.nom)}</h1><div class="sub">${esc([p.adresse,p.objet].filter(Boolean).join(" — "))}</div></div>
+    <div class="ref"><span>Code travaux</span><span>${esc(p.code||"—")}</span><span>Indice</span><span>${esc(p.indice||"—")}</span><span>Édition</span><span>${fmtD(p.dateEdition)||"—"}</span></div>
+    ${p.archLogo?`<img class="hlogo" src="${esc(p.archLogo)}" alt="Logo architecte">`:""}
+  </header>
+  <div class="shell">${nav}<main>${body}</main></div>`;
+}
+const navBtn=(t,label)=>`<button data-act="tab" data-tab="${t}" aria-current="${S.view.tab===t}">${label}</button>`;
+const ro = () => S.canWrite? "" : "disabled";
+
+function inp(path, val, type="text", cls="", extra=""){
+  if(S.pdf){
+    let t=val??"";
+    if(type==="num") t = /\.(pct|taux)$/.test(path) ? (+val||0).toLocaleString("fr-FR",{maximumFractionDigits:2})+" %" : fmtE(+val||0);
+    else if(type==="date") t=fmtD(val);
+    return `<span class="ro ${type==="num"?"n":""}">${esc(t)||"&nbsp;"}</span>`;
+  }
+  const money = type==="num" && /\.ht$/.test(path);
+  const v = money ? fmtE(+val||0) : type==="num" ? numIn(val) : (val??"");
+  if(money) extra += ' data-money="1"';
+  const t = type==="date" ? "date" : "text";
+  const im = type==="num" ? 'inputmode="decimal"' : "";
+  return `<input type="${t}" ${im} class="${cls}" data-p="${esc(path)}" data-t="${type}" value="${esc(v)}" ${extra} ${ro()}>`;
+}
+function tvaSel(path,val){
+  if(S.pdf) return `<span class="ro">${fmtP(+val||0)}</span>`;
+  return `<select data-p="${esc(path)}" data-t="float" ${ro()}>${TVAS.map(t=>`<option value="${t}" ${Math.abs((+val||0)-t)<1e-9?"selected":""}>${fmtP(t)}</option>`).join("")}</select>`;
+}
+
+/* ---- pièce jointe PDF d'une ligne ---- */
+function pdfCell(path,row){
+  if(S.pdf) return "";
+  if(row.pdf) return `<td class="c-pdf"><button class="pdfbtn has ${S.viewer&&S.viewer.path===path?"on":""}" data-act="viewpdf" data-p="${esc(path)}" title="Voir ${esc(row.pdf.name||"le PDF")}">PDF</button></td>`;
+  if(S.assets&&S.canWrite) return `<td class="c-pdf"><button class="pdfbtn add" data-act="addpdf" data-p="${esc(path)}" title="Joindre le PDF">+ PDF</button></td>`;
+  return `<td class="c-pdf"></td>`;
+}
+const pdfTh = () => S.pdf ? "" : `<th class="c-pdf">PDF</th>`;
+const rowCls = (path,extra="") => `${extra}${S.viewer&&S.viewer.path===path?" viewing":""}`;
+
+/* ---- lot ---- */
+function lotView(p,l){
+  const c=lotCalc(l); const base=`lots.${l.id}`;
+  const engRows=l.engagements.map(e=>{ const h=signedHT(e), tv=h*(+e.tva||0);
+    return `<tr class="${rowCls(`${base}.engagements.${e.id}`,e.type==="MV"?"mv":e.type==="AV"?"av":"")}">
+      <td>${S.pdf?`<span class="ro">${ENG_SHORT[e.type]||""}</span>`:`<select title="${ENG_TYPES[e.type]||""}" data-p="${base}.engagements.${e.id}.type" data-t="text" ${ro()}>${Object.entries(ENG_SHORT).map(([k,v])=>`<option value="${k}" title="${ENG_TYPES[k]}" ${e.type===k?"selected":""}>${v}</option>`).join("")}</select>`}</td>
+      <td>${inp(`${base}.engagements.${e.id}.numAE`,e.numAE)}</td>
+      <td>${inp(`${base}.engagements.${e.id}.code`,e.code)}</td>
+      <td>${inp(`${base}.engagements.${e.id}.date`,e.date,"date")}</td>
+      <td class="lib">${inp(`${base}.engagements.${e.id}.libelle`,e.libelle)}</td>
+      <td>${inp(`${base}.engagements.${e.id}.ht`,e.type==="MV"?Math.abs(+e.ht||0):e.ht,"num","n")}</td>
+      <td>${tvaSel(`${base}.engagements.${e.id}.tva`,e.tva)}</td>
+      <td class="n calc col-tva">${fmtE(tv)}</td><td class="n calc ttc">${fmtE(h+tv)}</td>
+      ${pdfCell(`${base}.engagements.${e.id}`,e)}
+      <td>${S.canWrite?`<button class="x" title="Supprimer la ligne" aria-label="Supprimer la ligne" data-act="delrow" data-p="${base}.engagements.${e.id}">×</button>`:""}</td></tr>`;}).join("");
+  const facRows=l.factures.map(f=>{ const h=+f.ht||0, tv=h*(+f.tva||0);
+    return `<tr class="${rowCls(`${base}.factures.${f.id}`)}">
+      <td>${inp(`${base}.factures.${f.id}.situation`,f.situation)}</td>
+      <td>${inp(`${base}.factures.${f.id}.num`,f.num)}</td>
+      <td>${inp(`${base}.factures.${f.id}.date`,f.date,"date")}</td>
+      <td>${inp(`${base}.factures.${f.id}.ht`,f.ht,"num","n")}</td>
+      <td>${tvaSel(`${base}.factures.${f.id}.tva`,f.tva)}</td>
+      <td class="n calc col-tva">${fmtE(tv)}</td><td class="n calc ttc">${fmtE(h+tv)}</td>
+      ${pdfCell(`${base}.factures.${f.id}`,f)}
+      <td>${S.canWrite?`<button class="x" title="Supprimer la ligne" aria-label="Supprimer la ligne" data-act="delrow" data-p="${base}.factures.${f.id}">×</button>`:""}</td></tr>`;}).join("");
+  const delta=c.fac-c.marche;
+  const lt=l.affichage==="TTC", m1=lt?"TTC":"HT", m2=lt?"HT":"TTC", lv=(h,t)=>lt?t:h, lo=(h,t)=>lt?h:t;
+  const logo = l.logo
+    ? `<div class="logo"><img src="${esc(l.logo)}" alt="Logo ${esc(l.entreprise)}">${S.canWrite?`<div class="acts"><button class="btn ghost small" data-act="logo" data-id="${l.id}">Remplacer</button><button class="btn ghost small" data-act="dellogo" data-id="${l.id}">Retirer</button></div>`:""}</div>`
+    : (S.canWrite?`<div class="logo"><button class="logo-drop" data-act="logo" data-id="${l.id}">Ajouter le logo de l'entreprise</button></div>`:"");
+  return `
+  <div class="lothead">
+    ${logo.replace('class="logo"','class="logo left"')}
+    <div class="ltitle">
+      <h2><span>Lot</span>${inp(`${base}.num`,l.num,"text","in-num",'aria-label="N° de lot"')}<span>—</span>${inp(`${base}.intitule`,l.intitule,"text","in-int",'placeholder="Intitulé du lot" aria-label="Intitulé du lot"')}</h2>
+      <div class="ent">${inp(`${base}.entreprise`,l.entreprise,"text","in-ent",'placeholder="Entreprise titulaire" aria-label="Entreprise titulaire"')}</div>
+    </div>
+    <div class="lact" style="display:flex;flex-direction:column;align-items:flex-end;gap:8px">
+    ${S.pdf?"":`<div class="seg" role="group" aria-label="Affichage du lot"><button data-act="lotmode" data-id="${l.id}" data-v="HT" aria-pressed="${!lt}">HT</button><button data-act="lotmode" data-id="${l.id}" data-v="TTC" aria-pressed="${lt}">TTC</button></div>`}
+    ${S.canWrite?`<button class="btn small danger" data-act="dellot" data-id="${l.id}">${S.confirmDel===l.id?"Confirmer la suppression du lot":"Supprimer le lot"}</button>`:""}
+    </div>
+  </div>
+  <div class="balance">
+    <div><small>Marché initial ${m1}</small><strong>${fmtE(lv(c.ini,c.iniT))}</strong><em>${fmtE(lo(c.ini,c.iniT))} ${m2}</em></div>
+    <div><small>Avenants ${m1}</small><strong>${fmtE(lv(c.av,c.avT))}</strong><em>${fmtE(lo(c.av,c.avT))} ${m2}</em></div>
+    <div><small>Moins-values ${m1}</small><strong class="${c.mv?"neg":""}">${fmtE(lv(c.mv,c.mvT))}</strong><em>${fmtE(lo(c.mv,c.mvT))} ${m2}</em></div>
+    <div class="hl"><small>Marché actualisé ${m1}</small><strong>${fmtE(lv(c.marche,c.marcheT))}</strong><em>${fmtE(lo(c.marche,c.marcheT))} ${m2}</em></div>
+    <div><small>Facturé ${m1}</small><strong>${fmtE(lv(c.fac,c.facT))}</strong><em>${fmtP(c.pct)} du marché</em></div>
+    <div><small>Reste à facturer ${m1}</small><strong class="${c.resteT<-0.005?"neg":""}">${fmtE(lv(c.reste,c.resteT))}</strong><em>${fmtE(lo(c.reste,c.resteT))} ${m2}</em></div>
+  </div>
+  <section class="panel">
+    <h2>Engagements</h2>
+    <div class="tscroll"><table class="wide fit">
+      <thead><tr><th class="c-AE">Type</th><th class="c-num">N° AE</th><th class="c-code">Code / devis</th><th class="c-date">Date</th><th>Désignation</th><th class="n c-ht">Montant HT</th><th class="c-tva">TVA</th><th class="n c-mt col-tva">Montant TVA</th><th class="n c-ttc">Montant TTC</th>${pdfTh()}<th class="c-x"></th></tr></thead>
+      <tbody>${engRows||`<tr><td colspan="11" class="note" style="padding:12px 6px">Aucun engagement saisi.</td></tr>`}</tbody>
+      <tfoot><tr class="total"><td colspan="5">Marché actualisé</td><td class="n">${fmtE(c.marche)}</td><td></td><td class="n col-tva">${fmtE(c.marcheT-c.marche)}</td><td class="n">${fmtE(c.marcheT)}</td>${pdfTh().replace("th","td").replace("PDF</th>","</td>")}<td></td></tr></tfoot>
+    </table></div>
+    ${S.canWrite?`<div class="addrow"><button class="btn small" data-act="addeng" data-id="${l.id}" data-type="AE">+ Acte d'engagement</button>
+    <button class="btn small" data-act="addeng" data-id="${l.id}" data-type="AV">+ Avenant</button>
+    <button class="btn small" data-act="addeng" data-id="${l.id}" data-type="MV">+ Moins-value</button></div>`:""}
+  </section>
+  <section class="panel">
+    <h2>Factures de l'entreprise</h2>
+    <div class="tscroll"><table class="wide fit">
+      <thead><tr><th>Situation</th><th>N° de facture</th><th class="c-date">Date</th><th class="n c-ht">Montant HT</th><th class="c-tva">TVA</th><th class="n c-mt col-tva">Montant TVA</th><th class="n c-ttc">Montant TTC</th>${pdfTh()}<th class="c-x"></th></tr></thead>
+      <tbody>${facRows||`<tr><td colspan="9" class="note" style="padding:12px 6px">Aucune facture saisie.</td></tr>`}</tbody>
+      <tfoot><tr class="total"><td colspan="3">Total facturé</td><td class="n">${fmtE(c.fac)}</td><td></td><td class="n col-tva">${fmtE(c.facT-c.fac)}</td><td class="n">${fmtE(c.facT)}</td>${pdfTh().replace("th","td").replace("PDF</th>","</td>")}<td></td></tr></tfoot>
+    </table></div>
+    ${S.canWrite?`<div class="addrow"><button class="btn small" data-act="addfac" data-id="${l.id}">+ Facture</button></div>`:""}
+  </section>
+  <section class="panel keep">
+    <h2>Bilan du lot</h2>
+    <div class="tscroll"><table><tbody>
+      <tr><td>Total engagé TTC</td><td class="n">${fmtE(c.marcheT)}</td></tr>
+      <tr><td>Total facturé TTC</td><td class="n">${fmtE(c.facT)}</td></tr>
+      <tr class="total"><td>Delta (facturé − engagé)</td><td class="n ${delta>0.005?"neg":""}">${fmtE(c.facT-c.marcheT)}</td></tr>
+    </tbody></table></div>
+  </section>`;
+}
+
+/* ---- architecte ---- */
+function archiView(p,C){
+  const a=p.archi, A=C.A, T=C.T;
+  const etRows=a.etudes.map(e=>`<tr><td>${inp(`archi.etudes.${e.id}.libelle`,e.libelle)}</td><td>${inp(`archi.etudes.${e.id}.ht`,e.ht,"num","n")}</td>
+     <td class="n calc ttc">${fmtE((+e.ht||0)*(1+(+a.tva||0)))}</td>
+     <td>${S.canWrite?`<button class="x" aria-label="Supprimer la ligne" data-act="delrow" data-p="archi.etudes.${e.id}">×</button>`:""}</td></tr>`).join("");
+  let cum=0;
+  const jRows=a.jalons.map(j=>{ cum+=(+j.pct||0); const m=A.total*(+j.pct||0);
+    const reached = T.pct+1e-9 >= cum;
+    return `<tr><td>${inp(`archi.jalons.${j.id}.libelle`,j.libelle)}</td><td>${inp(`archi.jalons.${j.id}.pct`,(+j.pct||0)*100,"num","n")}</td>
+      <td class="n calc">${fmtP(cum)}</td><td class="n calc">${fmtE(m)}</td><td class="n calc ttc">${fmtE(m*(1+(+a.tva||0)))}</td>
+      <td>${reached?`<span class="tag ok">Atteint</span>`:`<span class="tag">À venir</span>`}</td>
+      <td>${S.canWrite?`<button class="x" aria-label="Supprimer la ligne" data-act="delrow" data-p="archi.jalons.${j.id}">×</button>`:""}</td></tr>`;}).join("");
+  const today=new Date();
+  const fRows=a.factures.map(f=>{ const h=+f.ht||0, t=h*(1+(+f.tva||0)); const fp=`archi.factures.${f.id}`;
+    let st=`<span class="tag">Brouillon</span>`;
+    if(f.payee) st=`<span class="tag ok">Réglée</span>`;
+    else if(f.transmis){ const ref=f.relance||f.transmis; const days=Math.floor((today-new Date(ref+"T00:00:00"))/864e5);
+      st = days>30?`<span class="tag warn" title="${f.relance?"Relancée":"Transmise"} il y a ${days} jours">Impayée · ${days} j</span>`:`<span class="tag">En attente</span>`; }
+    return `<tr class="${rowCls(fp)}">
+      <td>${inp(`archi.factures.${f.id}.situation`,f.situation)}</td>
+      <td>${inp(`archi.factures.${f.id}.num`,f.num)}</td>
+      <td>${S.pdf?`<span class="ro">${f.mission==="etudes"?"Études":"Exécution"}</span>`:`<select data-p="archi.factures.${f.id}.mission" data-t="text" ${ro()}><option value="etudes" ${f.mission==="etudes"?"selected":""}>Études</option><option value="exec" ${f.mission!=="etudes"?"selected":""}>Exécution</option></select>`}</td>
+      <td>${inp(`archi.factures.${f.id}.ht`,f.ht,"num","n")}</td>
+      <td>${tvaSel(`archi.factures.${f.id}.tva`,f.tva)}</td>
+      <td class="n calc ttc">${fmtE(t)}</td>
+      <td>${inp(`archi.factures.${f.id}.transmis`,f.transmis,"date")}</td>
+      <td>${inp(`archi.factures.${f.id}.relance`,f.relance,"date")}</td>
+      <td style="text-align:center">${S.pdf?(f.payee?"Oui":"—"):`<input type="checkbox" style="width:auto" aria-label="Réglée" data-p="archi.factures.${f.id}.payee" data-t="bool" ${f.payee?"checked":""} ${ro()}>`}</td>
+      <td>${st}</td>
+      ${pdfCell(fp,f)}
+      <td>${S.canWrite?`<button class="x" aria-label="Supprimer la ligne" data-act="delrow" data-p="archi.factures.${f.id}">×</button>`:""}</td></tr>`;}).join("");
+  const ecartTxt = Math.abs(A.ecart)<1 ? `La facturation des honoraires suit l'avancement des travaux.`
+    : A.ecart<0 ? `Vous pouvez encore facturer <b>${fmtE(-A.ecart)} HT</b> d'honoraires pour rejoindre l'avancement des travaux.`
+    : `La facturation des honoraires devance l'avancement des travaux de <b>${fmtE(A.ecart)} HT</b>.`;
+  return `
+  <div class="balance">
+    <div><small>Base travaux HT</small><strong>${fmtE(A.base)}</strong><em>Marchés actualisés</em></div>
+    <div class="hl"><small>Honoraires totaux HT (${fmtP(a.taux)})</small><strong>${fmtE(A.total)}</strong><em>${fmtE(A.totalT)} TTC</em></div>
+    <div><small>Facturé HT</small><strong>${fmtE(A.fac)}</strong><em>${fmtP(A.pct)} des honoraires</em></div>
+    <div><small>Restant dû TTC</small><strong class="${A.resteT<-0.005?"neg":""}">${fmtE(A.resteT)}</strong><em>${fmtE(A.reste)} HT</em></div>
+  </div>
+  <section class="panel">
+    <h2>Facturation à l'avancement</h2>
+    <div class="bars">
+      <div class="barrow"><div class="lbl"><b>Travaux</b><small>facturé / marchés</small></div>
+        <div class="track"><span class="eng" style="width:100%"></span><span class="fac" style="width:${Math.min(T.pct,1)*100}%"></span></div>
+        <div class="val"><b>${fmtP(T.pct)}</b>${fmtK(T.fac)} HT</div></div>
+      <div class="barrow"><div class="lbl"><b>Honoraires</b><small>facturé / total</small></div>
+        <div class="track"><span class="eng" style="width:100%"></span><span class="fac ${A.pct>1?"over":""}" style="width:${Math.min(A.pct,1)*100}%"></span><span class="tick" style="left:calc(${Math.min(T.pct,1)*100}% - 1px)" title="Avancement des travaux"></span></div>
+        <div class="val"><b>${fmtP(A.pct)}</b>${fmtK(A.fac)} / ${fmtK(A.total)} HT</div></div>
+    </div>
+    <div class="legend"><span><i style="background:var(--bar-fac)"></i>Facturé</span><span><i style="background:var(--bar-eng)"></i>Montant dû</span><span><i style="background:var(--ochre);width:3px"></i>Avancement des travaux</span></div>
+    <p style="margin:14px 0 0">${ecartTxt} Honoraires exigibles à ce stade : ${fmtE(A.exigible)} HT.</p>
+  </section>
+  <section class="panel">
+    <h2>Phases d'études (forfait)</h2>
+    <div class="tscroll"><table>
+      <thead><tr><th>Phase</th><th class="n c-ht">Montant HT</th><th class="n">Montant TTC</th><th class="c-x"></th></tr></thead>
+      <tbody>${etRows||`<tr><td colspan="4" class="note" style="padding:12px 6px">Aucune phase d'études.</td></tr>`}</tbody>
+      <tfoot><tr class="total"><td>Total études</td><td class="n">${fmtE(A.etudes)}</td><td class="n">${fmtE(A.etudes*(1+(+a.tva||0)))}</td><td></td></tr></tfoot>
+    </table></div>
+    ${S.canWrite?`<div class="addrow"><button class="btn small" data-act="addetude">+ Phase d'études</button></div>`:""}
+  </section>
+  <section class="panel">
+    <h2>Échéancier de la phase exécution</h2>
+    <p class="note" style="margin:0 0 10px">Base : ${fmtP(a.taux)} de ${fmtE(A.base)} HT de travaux engagés, soit ${fmtE(A.total)} HT.</p>
+    <div class="tscroll"><table>
+      <thead><tr><th>Échéance</th><th class="n c-ht">%</th><th class="n">Cumul</th><th class="n">Honoraires HT</th><th class="n">Honoraires TTC</th><th>État</th><th class="c-x"></th></tr></thead>
+      <tbody>${jRows}</tbody>
+      <tfoot><tr class="total"><td>Total</td><td class="n ${Math.abs(A.jalonsSum-1)>1e-6?"neg":""}">${fmtP(A.jalonsSum)}</td><td></td><td class="n">${fmtE(A.total*A.jalonsSum)}</td><td class="n">${fmtE(A.total*A.jalonsSum*(1+(+a.tva||0)))}</td><td colspan="2"></td></tr></tfoot>
+    </table></div>
+    ${Math.abs(A.jalonsSum-1)>1e-6?`<p class="note neg">Le total des échéances doit faire 100 %.</p>`:""}
+    ${S.canWrite?`<div class="addrow"><button class="btn small" data-act="addjalon">+ Échéance</button></div>`:""}
+  </section>
+  <section class="panel">
+    <h2>Notes d'honoraires transmises</h2>
+    <div class="tscroll"><table class="xwide fit">
+      <thead><tr><th class="c-sit">Sit.</th><th>N° de facture</th><th class="c-mis">Mission</th><th class="n c-ht">Montant HT</th><th class="c-tva">TVA</th><th class="n c-mt">TTC</th><th class="c-date">Transmise le</th><th class="c-date">Relancée le</th><th class="c-rg">Réglée</th><th class="c-etat">État</th>${pdfTh()}<th class="c-x"></th></tr></thead>
+      <tbody>${fRows||`<tr><td colspan="12" class="note" style="padding:12px 6px">Aucune note d'honoraires.</td></tr>`}</tbody>
+      <tfoot><tr class="total"><td colspan="3">Total facturé</td><td class="n">${fmtE(A.fac)}</td><td></td><td class="n">${fmtE(A.facT)}</td><td colspan="${S.pdf?5:6}"></td></tr></tfoot>
+    </table></div>
+    ${S.canWrite?`<div class="addrow"><button class="btn small" data-act="addhono">+ Note d'honoraires</button></div>`:""}
+  </section>`;
+}
+
+/* ---- infos ---- */
+function infosView(p){
+  const a=p.archi;
+  const f=(k,label,type="text")=>`<div class="field"><label>${label}</label>${inp(k,p[k],type)}</div>`;
+  return `<section class="panel"><h2 style="margin-bottom:14px">Informations de l'opération</h2>
+    <div class="fields">
+      ${f("nom","Immeuble / opération")}${f("adresse","Adresse")}${f("objet","Objet des travaux")}
+      ${f("code","Code travaux")}${f("indice","Indice")}${f("dateEdition","Date d'édition","date")}
+      ${f("moa","Maître d'ouvrage")}${f("gestionnaire","Gestionnaire")}
+      <div class="field"><label>Statut</label><select data-p="statut" data-t="text" ${ro()}>${["En cours","Réceptionné","DGD signé"].map(s=>`<option ${p.statut===s?"selected":""}>${s}</option>`).join("")}</select></div>
+    </div></section>
+  <section class="panel">
+    <h2 style="margin-bottom:12px">Identification de l'architecte</h2>
+    <div class="idrow">
+      <div class="fields"><div class="field" style="grid-column:span 2"><label>Architecte</label>${inp("architecte",p.architecte)}</div></div>
+      ${p.archLogo
+        ? `<div class="logo"><img src="${esc(p.archLogo)}" alt="Logo architecte">${S.canWrite?`<div class="acts"><button class="btn ghost small" data-act="logo" data-id="archi">Remplacer</button><button class="btn ghost small" data-act="dellogo" data-id="archi">Retirer</button></div>`:""}</div>`
+        : (S.canWrite?`<div class="logo"><button class="logo-drop" data-act="logo" data-id="archi">Ajouter le logo de l'architecte</button></div>`:"")}
+    </div>
+  </section>
+  <section class="panel">
+    <h2 style="margin-bottom:12px">Paramètres des honoraires</h2>
+    <div class="fields">
+      <div class="field"><label>Taux d'honoraires sur travaux (%)</label>${inp("archi.taux",(+a.taux||0)*100,"num","","data-pct='1'")}</div>
+      <div class="field"><label>TVA sur honoraires</label>${tvaSel("archi.tva",a.tva)}</div>
+    </div>
+  </section>
+    ${S.canWrite?`<section class="panel"><h2 style="margin-bottom:12px">Supprimer l'opération</h2>
+      <button class="btn danger" data-act="delproj">${S.confirmDel===p.id?"Confirmer la suppression définitive":"Supprimer l'opération"}</button></section>`:""}`;
+}
+
+/* ---- synthèse ---- */
+function synthView(p,C){
+  const {T,A}=C, t=S.ttc;
+  const v=(ht,ttc)=>fmtE(t?ttc:ht);
+  const sfx=t?"TTC":"HT";
+  const max=Math.max(1,...C.lots.map(({c})=>Math.max(t?c.marcheT:c.marche,t?c.facT:c.fac)), t?A.totalT:A.total, t?A.facT:A.fac);
+  const bar=(eng,fac)=>`<div class="track"><span class="eng" style="width:${eng/max*100}%"></span><span class="fac ${fac>eng+0.01?"over":""}" style="width:${Math.min(fac,max)/max*100}%"></span></div>`;
+  const rows=C.lots.map(({l,c})=>`<tr>
+     <td><button class="btn ghost small" style="padding:2px 4px" data-act="tab" data-tab="lot:${l.id}">Lot ${esc(l.num)} ${esc(l.intitule)}</button></td>
+     <td>${esc(l.entreprise)}</td>
+     <td class="n">${v(c.ini,c.iniT)}</td><td class="n">${v(c.av,c.avT)}</td><td class="n ${c.mv?"neg":""}">${v(c.mv,c.mvT)}</td>
+     <td class="n"><b>${v(c.marche,c.marcheT)}</b></td><td class="n">${v(c.fac,c.facT)}</td>
+     <td class="n ${c.reste<-0.005?"neg":""}">${v(c.reste,c.resteT)}</td><td class="n">${fmtP(c.pct)}</td></tr>`).join("");
+  const alerts=[];
+  for(const {l,c} of C.lots){
+    if(c.fac>c.marche+0.005) alerts.push(`<div class="alert neg"><b>Lot ${esc(l.num)}</b><span>Facturé au-delà du marché actualisé de ${fmtE(c.fac-c.marche)} HT : un avenant est peut-être manquant.</span></div>`);
+    if(!l.engagements.length) alerts.push(`<div class="alert"><b>Lot ${esc(l.num)}</b><span>Aucun acte d'engagement saisi.</span></div>`);
+  }
+  const now=new Date();
+  for(const f of p.archi.factures){ if(f.payee||!f.transmis) continue; const ref=f.relance||f.transmis; const d=Math.floor((now-new Date(ref+"T00:00:00"))/864e5);
+    if(d>30) alerts.push(`<div class="alert"><b>Note ${esc(f.num||f.situation)}</b><span>${f.relance?"Relancée":"Transmise"} il y a ${d} jours et non réglée.</span></div>`); }
+  if(Math.abs(A.jalonsSum-1)>1e-6) alerts.push(`<div class="alert"><b>Échéancier</b><span>Les échéances d'honoraires totalisent ${fmtP(A.jalonsSum)} au lieu de 100 %.</span></div>`);
+  if(A.ecart<-1) alerts.push(`<div class="alert"><b>Honoraires</b><span>${fmtE(-A.ecart)} HT d'honoraires d'exécution facturables au regard de l'avancement des travaux.</span></div>`);
+  const opHT=T.marche+A.total, opT=T.marcheT+A.totalT, opF=T.fac+A.fac, opFT=T.facT+A.facT;
+  return `
+  <div class="balance">
+    <div><small>Marchés initiaux ${sfx}</small><strong>${v(T.ini,T.iniT)}</strong><em>${p.lots.length} lot${p.lots.length>1?"s":""}</em></div>
+    <div><small>Avenants ${sfx}</small><strong>${v(T.av,T.avT)}</strong><em>Plus-values</em></div>
+    <div><small>Moins-values ${sfx}</small><strong class="${T.mv?"neg":""}">${v(T.mv,T.mvT)}</strong><em>Prestations supprimées</em></div>
+    <div class="hl"><small>Travaux engagés ${sfx}</small><strong>${v(T.marche,T.marcheT)}</strong><em>${fmtP(T.pct)} facturés</em></div>
+    <div><small>Honoraires architecte ${sfx}</small><strong>${v(A.total,A.totalT)}</strong><em>${fmtP(A.pct)} facturés</em></div>
+    <div><small>Coût de l'opération ${sfx}</small><strong>${v(opHT,opT)}</strong><em>Travaux + honoraires</em></div>
+  </div>
+  <section class="panel">
+    <div class="panel-head"><h2>Engagé et facturé par lot</h2>
+      <div class="seg" role="group" aria-label="Affichage des montants"><button data-act="ttc" data-v="0" aria-pressed="${!t}">HT</button><button data-act="ttc" data-v="1" aria-pressed="${t}">TTC</button></div></div>
+    <div class="bars" style="margin-top:8px">
+      ${C.lots.map(({l,c})=>`<div class="barrow"><div class="lbl"><b>Lot ${esc(l.num)} ${esc(l.intitule)}</b><small>${esc(l.entreprise)||"Entreprise non renseignée"}</small></div>
+        ${bar(t?c.marcheT:c.marche,t?c.facT:c.fac)}<div class="val"><b>${fmtP(c.pct)}</b>${fmtK(t?c.facT:c.fac)} / ${fmtK(t?c.marcheT:c.marche)}</div></div>`).join("")}
+      <div class="barrow"><div class="lbl"><b>Architecte</b><small>${esc(p.architecte)||"Honoraires"}</small></div>
+        ${bar(t?A.totalT:A.total,t?A.facT:A.fac)}<div class="val"><b>${fmtP(A.pct)}</b>${fmtK(t?A.facT:A.fac)} / ${fmtK(t?A.totalT:A.total)}</div></div>
+    </div>
+    <div class="legend"><span><i style="background:var(--bar-eng)"></i>Engagé</span><span><i style="background:var(--bar-fac)"></i>Facturé</span><span><i style="background:var(--neg)"></i>Facturé au-delà de l'engagé</span></div>
+  </section>
+  <section class="panel">
+    <h2>Décompte ${p.statut==="DGD signé"?"général définitif":"général provisoire"} (${sfx})</h2>
+    <div class="tscroll"><table class="xwide fit">
+      <thead><tr><th class="c-lot">Lot</th><th class="c-ent">Entreprise</th><th class="n">Marché initial</th><th class="n">Avenants</th><th class="n">Moins-values</th><th class="n">Marché actualisé</th><th class="n">Facturé</th><th class="n">Reste à facturer</th><th class="n">Avancement</th></tr></thead>
+      <tbody>${rows}
+        <tr class="total"><td colspan="2">Total travaux</td><td class="n">${v(T.ini,T.iniT)}</td><td class="n">${v(T.av,T.avT)}</td><td class="n">${v(T.mv,T.mvT)}</td><td class="n">${v(T.marche,T.marcheT)}</td><td class="n">${v(T.fac,T.facT)}</td><td class="n">${v(T.reste,T.resteT)}</td><td class="n">${fmtP(T.pct)}</td></tr>
+        <tr><td colspan="2" style="padding-top:12px"><button class="btn ghost small" style="padding:2px 4px" data-act="tab" data-tab="archi">Honoraires architecte</button></td><td colspan="3" class="note" style="padding-top:12px">${fmtP(p.archi.taux)} des travaux, forfait études inclus</td><td class="n" style="padding-top:12px">${v(A.total,A.totalT)}</td><td class="n" style="padding-top:12px">${v(A.fac,A.facT)}</td><td class="n" style="padding-top:12px">${v(A.reste,A.resteT)}</td><td class="n" style="padding-top:12px">${fmtP(A.pct)}</td></tr>
+        <tr class="total"><td colspan="5">Total opération</td><td class="n">${v(opHT,opT)}</td><td class="n">${v(opF,opFT)}</td><td class="n">${v(opHT-opF,opT-opFT)}</td><td class="n">${fmtP(opHT?opF/opHT:0)}</td></tr>
+      </tbody></table></div>
+    <p class="note" style="margin-top:12px">Delta travaux (facturé − engagé) : ${v(T.fac-T.marche,T.facT-T.marcheT)}.</p>
+  </section>`;
+}
+
+/* ---------- export Excel ---------- */
+async function exportXlsx(){
+  const p=cur(); if(!p||!window.XLSX) return;
+  const C=projCalc(p), {T,A}=C, wb=XLSX.utils.book_new();
+  const head=[["DÉCOMPTE GÉNÉRAL "+(p.statut==="DGD signé"?"DÉFINITIF":"PROVISOIRE")],["Opération",p.nom],["Adresse",p.adresse],["Objet",p.objet],["Code travaux",p.code,"Indice",p.indice],["Date d'édition",fmtD(p.dateEdition)],["Maître d'ouvrage",p.moa,"Gestionnaire",p.gestionnaire],["Architecte",p.architecte],[]];
+  const syn=[...head,["Lot","Intitulé","Entreprise","Marché initial HT","Avenants HT","Moins-values HT","Marché actualisé HT","Marché actualisé TTC","Facturé HT","Facturé TTC","Reste TTC","Avancement"]];
+  for(const {l,c} of C.lots) syn.push([l.num,l.intitule,l.entreprise,c.ini,c.av,c.mv,c.marche,c.marcheT,c.fac,c.facT,c.resteT,c.pct]);
+  syn.push(["","Total travaux","",T.ini,T.av,T.mv,T.marche,T.marcheT,T.fac,T.facT,T.resteT,T.pct]);
+  syn.push(["","Honoraires architecte","","","","",A.total,A.totalT,A.fac,A.facT,A.resteT,A.pct]);
+  syn.push(["","Total opération","","","","",T.marche+A.total,T.marcheT+A.totalT,T.fac+A.fac,T.facT+A.facT,T.resteT+A.resteT,""]);
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(syn),"Synthèse");
+  const used=new Set(["Synthèse"]);
+  for(const {l,c} of C.lots){
+    const r=[["LOT "+l.num+" "+(l.intitule||"").toUpperCase()],["Entreprise",l.entreprise],[],["ENGAGEMENTS"],["Type","N° AE","Code / devis","Date","Désignation","Montant HT","TVA","Montant TVA","Montant TTC"]];
+    for(const e of l.engagements){const h=signedHT(e); r.push([ENG_TYPES[e.type]||e.type,e.numAE||"",e.code,fmtD(e.date),e.libelle,h,+e.tva||0,h*(+e.tva||0),h*(1+(+e.tva||0))]);}
+    r.push(["","","","","Marché actualisé",c.marche,"",c.marcheT-c.marche,c.marcheT],[],["FACTURES"],["Situation","N° facture","Date","","Montant HT","TVA","Montant TVA","Montant TTC"]);
+    for(const f of l.factures){const h=+f.ht||0; r.push([f.situation,f.num,fmtD(f.date),"",h,+f.tva||0,h*(+f.tva||0),h*(1+(+f.tva||0))]);}
+    r.push(["","","","Total facturé",c.fac,"",c.facT-c.fac,c.facT],[],["BILAN"],["","","","","","","Total engagé TTC",c.marcheT],["","","","","","","Total facturé TTC",c.facT],["","","","","","","Delta",c.facT-c.marcheT]);
+    let name=("Lot "+l.num+" "+(l.intitule||"")).replace(/[\\/?*\[\]:]/g,"").slice(0,31).trim(); while(used.has(name)) name=name.slice(0,28)+" "+uid().slice(0,2); used.add(name);
+    XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(r),name);
+  }
+  const a=p.archi, ar=[["HONORAIRES ARCHITECTE"],["Base travaux HT",A.base],["Taux",+a.taux||0],["Honoraires totaux HT",A.total],["dont forfait études HT",A.etudes],["dont exécution HT",A.exec],["Honoraires totaux TTC",A.totalT],[],["PHASES D'ÉTUDES"],["Phase","Montant HT"]];
+  for(const e of a.etudes) ar.push([e.libelle,+e.ht||0]);
+  ar.push([],["ÉCHÉANCIER EXÉCUTION"],["Échéance","%","Honoraires HT"]);
+  for(const j of a.jalons) ar.push([j.libelle,+j.pct||0,A.total*(+j.pct||0)]);
+  ar.push([],["NOTES D'HONORAIRES"],["Situation","N° facture","Mission","Montant HT","TVA","Montant TTC","Transmise le","Relancée le","Réglée"]);
+  for(const f of a.factures){const h=+f.ht||0; ar.push([f.situation,f.num,f.mission==="etudes"?"Études":"Exécution",h,+f.tva||0,h*(1+(+f.tva||0)),fmtD(f.transmis),fmtD(f.relance),f.payee?"Oui":"Non"]);}
+  ar.push(["","","Total",A.fac,"",A.facT],[],["Restant dû TTC",A.resteT],["Avancement travaux",T.pct],["Honoraires exigibles HT",A.exigible]);
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(ar),"Architecte");
+  const buf=XLSX.write(wb,{bookType:"xlsx",type:"array"});
+  const r=await window.desktop.saveFile(`DGD ${p.nom} ${p.dateEdition||""}.xlsx`.trim(), buf, [{name:"Classeur Excel",extensions:["xlsx"]}]);
+  if(r&&r.ok) toast("Export Excel enregistré"); else if(r&&r.error) toast("L'export a échoué : "+r.error);
+}
+
+/* ---------- export PDF (moteur d'impression natif : texte vectoriel) ---------- */
+async function exportPdf(all){
+  const p=cur(); if(!p||S.pdfBusy) return; S.pdfBusy=true;
+  const root=document.documentElement, prevTheme=root.dataset.theme, prevTab=S.view.tab, prevScroll=window.scrollY;
+  const tabs = all ? ["synth",...p.lots.map(l=>"lot:"+l.id),"archi"] : [S.view.tab];
+  const label = all ? "dossier" : (prevTab==="synth"?"synthèse":prevTab==="archi"?"architecte":prevTab==="infos"?"informations":"lot "+((p.lots.find(l=>"lot:"+l.id===prevTab)||{}).num||""));
+  const hadViewer=document.body.classList.contains("viewing");
+  try{
+    document.body.classList.remove("viewing");
+    S.pdf=true; document.body.classList.add("pdf"); root.dataset.theme="light"; root.classList.add("printing");
+    let html="";
+    for(const t of tabs){ S.view.tab=t; html+=`<div class="print-page">${projectView(p)}</div>`; }
+    app.innerHTML=html;
+    if(document.fonts&&document.fonts.ready) await document.fonts.ready;
+    await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
+    const r=await window.desktop.printPdf({defaultName:`DGD ${p.nom} - ${label}.pdf`, footerLeft:`${p.nom} — édité le ${new Date().toLocaleDateString("fr-FR")}`, scale:0.62});
+    if(r&&r.error) toast("Le PDF n'a pas pu être créé : "+r.error);
+  } finally {
+    S.pdf=false; document.body.classList.remove("pdf"); root.classList.remove("printing");
+    if(hadViewer) document.body.classList.add("viewing");
+    if(prevTheme===undefined) delete root.dataset.theme; else root.dataset.theme=prevTheme;
+    S.view.tab=prevTab; render(); window.scrollTo(0,prevScroll); S.pdfBusy=false;
+  }
+}
+
+/* ---------- logo d'entreprise ---------- */
+async function readLogo(file){
+  const url=URL.createObjectURL(file);
+  try{
+    const img=new Image(); img.src=url;
+    await new Promise((res,rej)=>{img.onload=res; img.onerror=rej;});
+    const w0=img.naturalWidth||300, h0=img.naturalHeight||150;
+    const k=Math.min(1,520/w0,210/h0), w=Math.max(1,Math.round(w0*k)), h=Math.max(1,Math.round(h0*k));
+    const cv=document.createElement("canvas"); cv.width=w; cv.height=h;
+    cv.getContext("2d").drawImage(img,0,0,w,h);
+    let d=cv.toDataURL("image/png");
+    if(d.length>60000) d=cv.toDataURL("image/webp",0.85);
+    if(d.length>60000) d=cv.toDataURL("image/jpeg",0.8);
+    return d;
+  } finally { URL.revokeObjectURL(url); }
+}
+document.getElementById("logofile").addEventListener("change", async e=>{
+  const fi=e.target, file=fi.files&&fi.files[0], p=cur(); if(!file||!p) return;
+  const isArch=fi.dataset.lot==="archi";
+  const l=isArch?p:p.lots.find(x=>x.id===fi.dataset.lot); if(!l) return;
+  const key=isArch?"archLogo":"logo";
+  try{
+    const d=await readLogo(file);
+    const prev=l[key]; l[key]=d;
+    if(JSON.stringify(p).length>240000){ l[key]=prev; toast("Logo trop lourd pour cette opération : utilisez une image plus simple."); return; }
+    persist(p); render();
+  }catch(err){ toast("Ce fichier n'a pas pu être lu comme une image."); }
+});
+
+/* ---------- pièces jointes PDF et visionneuse ---------- */
+function rowAt(p,path){ const i=path.lastIndexOf("."); const r=resolve(p,path.slice(0,i)+".x"); const arr=r&&r.obj; return Array.isArray(arr)?arr.find(x=>x.id===path.slice(i+1)):null; }
+function rowLabel(p,path,row){
+  if(path.startsWith("archi.")) return `Note d'honoraires ${row.num||row.situation||""}`.trim();
+  const l=p.lots.find(x=>path.startsWith("lots."+x.id+".")); const lot=l?`Lot ${l.num} ${l.intitule||""}`.trim():"";
+  if(path.includes(".engagements.")) return `${lot} · ${({AE:"Acte d'engagement",AV:"Avenant",MV:"Moins-value"})[row.type]||""} ${row.numAE||row.code||""}`.trim();
+  return `${lot} · ${row.situation||"Facture"} ${row.num||""}`.trim();
+}
+function pickPdf(path){
+  if(!S.assets){ toast("L'ajout de PDF n'est pas disponible dans cette vue."); return; }
+  const fi=document.getElementById("pdffile"); fi.dataset.p=path; fi.value=""; fi.click();
+}
+document.getElementById("pdffile").addEventListener("change", async e=>{
+  const fi=e.target, file=fi.files&&fi.files[0], p=cur(); if(!file||!p) return;
+  const path=fi.dataset.p, row=rowAt(p,path); if(!row) return;
+  if(file.size>20*1024*1024){ toast("PDF trop lourd : 20 Mo maximum."); return; }
+  toast("Envoi du PDF…");
+  try{
+    const r=await S.assets.upload(file,{type:"application/pdf"});
+    const old=row.pdf;
+    row.pdf={id:r.id,name:file.name,size:r.sizeBytes,at:new Date().toISOString().slice(0,10)};
+    persist(p);
+    if(old&&old.id!==r.id) S.assets.delete(old.id).catch(()=>{});
+    openViewer(path);
+  }catch(err){
+    const c=err&&err.code;
+    toast(c==="too_large"?"PDF trop lourd : 20 Mo maximum.":c==="unsupported_type"?"Ce fichier n'est pas un PDF valide.":c==="quota_or_state"?"Espace de stockage plein pour cette application.":c==="rate_limited"?"Trop d'envois rapprochés, réessayez dans un instant.":"L'envoi du PDF a échoué.");
+  }
+});
+async function removePdf(){
+  const p=cur(); if(!p||!S.viewer) return;
+  const row=rowAt(p,S.viewer.path); if(!row||!row.pdf) return;
+  if(!S.viewer.confirmDel){ S.viewer.confirmDel=true; paintViewer(); return; }
+  const id=row.pdf.id; delete row.pdf; persist(p); closeViewer();
+  if(S.assets) S.assets.delete(id).catch(()=>{});
+}
+function closeViewer(){
+  S.viewer=null; const v=document.getElementById("viewer"); v.hidden=true; v.innerHTML="";
+  document.body.classList.remove("viewing"); render();
+}
+function openViewer(path){
+  const p=cur(); const row=p&&rowAt(p,path); if(!row||!row.pdf) return;
+  if(S.viewer&&S.viewer.path===path&&S.viewer.id===row.pdf.id){ closeViewer(); return; }
+  S.viewer={path,pid:p.id,id:row.pdf.id,zoom:1,doc:null};
+  document.body.classList.add("viewing"); render(); paintViewer(); loadPdf();
+}
+function paintViewer(){
+  const p=cur(), V=S.viewer, el=document.getElementById("viewer"); if(!V||!p) return;
+  const row=rowAt(p,V.path); if(!row||!row.pdf){ closeViewer(); return; }
+  const url="/_blob/"+row.pdf.id;
+  el.hidden=false;
+  el.innerHTML=`<header><div class="vt"><b>${esc(rowLabel(p,V.path,row))}</b><small>${esc(row.pdf.name||"Document PDF")}${row.pdf.size?" · "+Math.max(1,Math.round(row.pdf.size/1024)).toLocaleString("fr-FR")+" Ko":""}</small></div>
+    <button class="btn small ghost" data-act="closepdf" aria-label="Fermer la visionneuse">✕</button></header>
+    <div class="vtools"><button class="btn small" data-act="pdfzoom" data-v="-" aria-label="Zoom arrière">−</button><button class="btn small" data-act="pdfzoom" data-v="+" aria-label="Zoom avant">+</button>
+      <span class="note" id="vpages"></span><span class="sp"></span>
+      <button class="btn small" data-act="openpdfext">Ouvrir avec le lecteur PDF</button>
+      ${S.assets&&S.canWrite?`<button class="btn small" data-act="replacepdf">Remplacer</button><button class="btn small danger" data-act="removepdf">${V.confirmDel?"Confirmer le retrait":"Retirer"}</button>`:""}</div>
+    <div class="vbody" id="vbody"><div class="vmsg">Chargement du PDF…</div></div>`;
+  if(V.doc) drawPdf();
+}
+async function loadPdf(){
+  const V=S.viewer; if(!V) return;
+  const lib=window.pdfjsLib;
+  if(!lib){ document.getElementById("vbody").innerHTML=`<div class="vmsg">La visionneuse n'a pas pu se charger. Utilisez « Ouvrir avec le lecteur PDF ».</div>`; return; }
+  try{
+    lib.GlobalWorkerOptions.workerSrc="vendor/pdf.worker.min.js";
+    const buf=await window.desktop.pdfRead(V.id); if(!buf) throw new Error("introuvable");
+    const doc=await lib.getDocument({data:new Uint8Array(buf)}).promise;
+    if(S.viewer!==V) return;
+    V.doc=doc; drawPdf();
+  }catch(err){
+    if(S.viewer===V){ const b=document.getElementById("vbody"); if(b) b.innerHTML=`<div class="vmsg">Ce PDF n'a pas pu être affiché (fichier absent ou pas encore synchronisé par Dropbox). Utilisez « Ouvrir avec le lecteur PDF ».</div>`; }
+  }
+}
+async function drawPdf(){
+  const V=S.viewer; if(!V||!V.doc) return;
+  const body=document.getElementById("vbody"); if(!body) return;
+  const token=V.drawToken=Math.random();
+  body.innerHTML="";
+  const pages=document.getElementById("vpages"); if(pages) pages.textContent=`${V.doc.numPages} page${V.doc.numPages>1?"s":""} · ${Math.round((V.zoom||1)*100)} %`;
+  const avail=Math.max(200,body.clientWidth-24), dpr=Math.min(2,window.devicePixelRatio||1);
+  for(let n=1;n<=V.doc.numPages;n++){
+    const page=await V.doc.getPage(n); if(V.drawToken!==token) return;
+    const base=page.getViewport({scale:1}), scale=avail/base.width*(V.zoom||1);
+    const vp=page.getViewport({scale:scale*dpr});
+    const cv=document.createElement("canvas"); cv.width=vp.width; cv.height=vp.height;
+    cv.style.width=(vp.width/dpr)+"px"; cv.style.height=(vp.height/dpr)+"px";
+    body.appendChild(cv);
+    await page.render({canvasContext:cv.getContext("2d"),viewport:vp}).promise;
+  }
+}
+document.getElementById("viewer").addEventListener("click", e=>{
+  const b=e.target.closest("[data-act]"); if(!b||b.tagName==="A") return;
+  e.stopPropagation(); app.dispatchEvent(new CustomEvent("vact",{detail:b}));
+});
+let resizeT; window.addEventListener("resize",()=>{ clearTimeout(resizeT); resizeT=setTimeout(()=>{ if(S.viewer&&S.viewer.doc) drawPdf(); },200); });
+document.addEventListener("keydown",e=>{ if(e.key==="Escape"&&S.viewer) closeViewer(); });
+
+/* ---------- événements ---------- */
+const app=document.getElementById("app");
+app.addEventListener("input", e=>{
+  const el=e.target; if(!el.dataset||!el.dataset.p||el.type==="checkbox"||el.tagName==="SELECT") return;
+  applyField(el,false);
+});
+app.addEventListener("change", e=>{
+  const el=e.target; if(!el.dataset||!el.dataset.p) return;
+  applyField(el,true);
+});
+app.addEventListener("focusin", e=>{
+  const el=e.target; if(el.dataset&&el.dataset.money){ el.value=numIn(Math.abs(parseNum(el.value))===0?"":parseNum(el.value)); el.select(); }
+});
+app.addEventListener("focusout", e=>{
+  const el=e.target; if(el.dataset&&el.dataset.money) el.value=fmtE(parseNum(el.value));
+});
+app.addEventListener("focusout", ()=>{ setTimeout(()=>{ if(S.pendingRender) requestRender(); },0); });
+function applyField(el, rerender){
+  const p=cur(); if(!p||!S.canWrite) return;
+  const r=resolve(p, el.dataset.p); if(!r||!r.obj) return;
+  const t=el.dataset.t; let val=el.value;
+  if(t==="num"){ val=parseNum(val); if(el.dataset.pct||/\.pct$/.test(el.dataset.p)) val=val/100; }
+  else if(t==="float") val=parseFloat(val)||0;
+  else if(t==="bool") val=el.checked;
+  if(r.key==="ht" && r.obj.type==="MV") val=-Math.abs(val);
+  r.obj[r.key]=val;
+  persist(p);
+  if(rerender) setTimeout(render,0);
+}
+app.addEventListener("vact", e=>handleAct(e.detail));
+app.addEventListener("click", e=>{
+  const b=e.target.closest("[data-act]"); if(!b) return;
+  handleAct(b);
+});
+function handleAct(b){
+  const act=b.dataset.act, p=cur();
+  if(act!=="dellot"&&act!=="delproj") S.confirmDel=null;
+  switch(act){
+    case "lotmode": { const l=p.lots.find(x=>x.id===b.dataset.id); if(l){ l.affichage=b.dataset.v; persist(p);} break; }
+    case "addpdf": pickPdf(b.dataset.p); return;
+    case "viewpdf": openViewer(b.dataset.p); return;
+    case "closepdf": closeViewer(); return;
+    case "replacepdf": if(S.viewer) pickPdf(S.viewer.path); return;
+    case "removepdf": removePdf(); return;
+    case "pdfzoom": if(S.viewer){ S.viewer.zoom=Math.max(.5,Math.min(3,(S.viewer.zoom||1)*(b.dataset.v==="+"?1.2:1/1.2))); drawPdf(); } return;
+    case "home": S.view={pid:null,tab:"synth"}; break;
+    case "open": S.view={pid:b.dataset.id,tab:"synth"}; window.scrollTo(0,0); break;
+    case "newproj": { const np=newProject(); S.projects[np.id]=np; S.view={pid:np.id,tab:"infos"}; persist(np); break; }
+    case "tab": S.view.tab=b.dataset.tab; window.scrollTo(0,0); break;
+    case "ttc": S.ttc=b.dataset.v==="1"; break;
+    case "export": exportXlsx(); return;
+    case "changefile": case "openfile": chooseFile("open"); return;
+    case "createfile": chooseFile("create"); return;
+    case "openpdfext": if(S.viewer) window.desktop.pdfOpen(S.viewer.id).then(ok=>{ if(!ok) toast("Fichier PDF introuvable (synchronisation Dropbox en cours ?)."); }); return;
+    case "forceedit": S.lockedBy=null; S.canWrite=true; window.desktop.takeLock(); setSync("Enregistré"); break;
+    case "pdf": exportPdf(b.dataset.all==="1"); return;
+    case "logo": { const fi=document.getElementById("logofile"); fi.dataset.lot=b.dataset.id; fi.value=""; fi.click(); return; }
+    case "dellogo": { if(b.dataset.id==="archi"){ delete p.archLogo; persist(p); break; } const l=p.lots.find(x=>x.id===b.dataset.id); if(l){ delete l.logo; persist(p);} break; }
+    case "addlot": { const n=p.lots.length? Math.max(...p.lots.map(l=>parseInt(l.num)||0))+1 : 1; const l=newLot(n); p.lots.push(l); S.view.tab="lot:"+l.id; persist(p); break; }
+    case "dellot": { if(S.confirmDel!==b.dataset.id){ S.confirmDel=b.dataset.id; break; } p.lots=p.lots.filter(l=>l.id!==b.dataset.id); S.confirmDel=null; S.view.tab="synth"; persist(p); break; }
+    case "delproj": { if(S.confirmDel!==p.id){ S.confirmDel=p.id; break; } delete S.projects[p.id]; S.confirmDel=null; S.view={pid:null,tab:"synth"}; persist(null); break; }
+    case "addeng": { const l=p.lots.find(x=>x.id===b.dataset.id); const prevT=l.engagements.length?l.engagements[l.engagements.length-1].tva:0.1;
+      l.engagements.push({id:uid(),type:b.dataset.type,numAE:"",code:"",date:"",libelle:"",ht:0,tva:prevT}); persist(p); break; }
+    case "addfac": { const l=p.lots.find(x=>x.id===b.dataset.id); const prevT=l.factures.length?l.factures[l.factures.length-1].tva:(l.engagements[0]?.tva??0.1);
+      l.factures.push({id:uid(),situation:"Situation n°"+(l.factures.length+1),num:"",date:"",ht:0,tva:prevT}); persist(p); break; }
+    case "addetude": p.archi.etudes.push({id:uid(),libelle:"Phase "+(p.archi.etudes.length+1),ht:0}); persist(p); break;
+    case "addjalon": p.archi.jalons.push({id:uid(),libelle:"Échéance "+(p.archi.jalons.length+1),pct:0}); persist(p); break;
+    case "addhono": p.archi.factures.push({id:uid(),situation:"S"+(p.archi.factures.length+1),num:"",mission:"exec",ht:0,tva:p.archi.tva,transmis:"",relance:"",payee:false}); persist(p); break;
+    case "delrow": { const path=b.dataset.p, i=path.lastIndexOf("."); const r=resolve(p,path.slice(0,i)+".x"); const arr=r&&r.obj; if(Array.isArray(arr)){ const k=arr.findIndex(x=>x.id===path.slice(i+1)); if(k>=0){ const gone=arr[k]; arr.splice(k,1); persist(p); if(gone.pdf&&S.assets) S.assets.delete(gone.pdf.id).catch(()=>{}); if(S.viewer&&S.viewer.path===path) closeViewer(); } } break; }
+  }
+  render();
+}
+
+render();
+initDesktop();
+</script>
+</body>
+</html>

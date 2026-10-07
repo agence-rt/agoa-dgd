@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="fr"><head><meta charset="utf-8"><title>AGOA DGD</title>
+<style>
+  html,body{margin:0;height:100%;overflow:hidden;-webkit-user-select:none;user-select:none;cursor:default}
+  body{font-family:"Segoe UI",system-ui,Arial,sans-serif;background:#fff;color:#1F2328;border:1px solid #dcdcdc;box-sizing:border-box;position:relative}
+  .c{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding-bottom:34px}
+  .logo{width:126px;height:126px;border-radius:24px;background:#B3261E;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:33px;letter-spacing:.01em}
+  .t{margin-top:22px;font-size:25px;font-weight:700;letter-spacing:.22em}
+  .t span{color:#B3261E}
+  .s{margin-top:10px;font-size:13px;color:#666}
+  .v{position:absolute;right:12px;bottom:9px;font-size:11px;color:#9a9a9a}
+  .st{position:absolute;left:0;right:0;bottom:30px;text-align:center;font-size:12px;color:#777;min-height:16px}
+  .track{position:absolute;left:0;right:0;bottom:0;height:3px;overflow:hidden}
+  .bar{position:absolute;top:0;bottom:0;width:30%;background:#B3261E;animation:run 1.2s ease-in-out infinite}
+  .bar.det{animation:none;left:0;width:0;transition:width .3s}
+  @keyframes run{0%{left:-30%}100%{left:100%}}
+</style></head>
+<body>
+  <div class="c">
+    <div class="logo">AGOA</div>
+    <div class="t">AGOA <span>DGD</span></div>
+    <div class="s">Suivi financier des chantiers et décompte général</div>
+  </div>
+  <div class="v" id="v"></div>
+  <div class="st" id="st"></div>
+  <div class="track"><div class="bar" id="bar"></div></div>
+  <script>
+  window.setStatus = (text, pct) => {
+    document.getElementById("st").textContent = text || "";
+    const b = document.getElementById("bar");
+    if (pct == null) { b.className = "bar"; b.style.width = ""; } else { b.className = "bar det"; b.style.width = Math.max(2, Math.min(100, pct)) + "%"; }
+  };const q=new URLSearchParams(location.search);document.getElementById("v").textContent=q.get("v")?("v"+q.get("v")):"";</script>
+</body></html>
