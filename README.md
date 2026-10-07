@@ -28,8 +28,10 @@ l'installe puis relance AGOA DGD, sans intervention. En cours d'utilisation,
 
 ## Données
 
-- **Fichier de données** : un seul fichier `.json` choisi au premier lancement, à placer dans
-  Dropbox pour que les collègues puissent le reprendre. Un fichier `.lock` voisin signale le poste
+- **Dossier AGOA DGD** : un seul fichier **`.dgd`** choisi au premier lancement, à placer dans
+  Dropbox pour que les collègues puissent le reprendre. Un double-clic sur un `.dgd` l'ouvre dans
+  AGOA DGD. **Fichier › Enregistrer sous** (Ctrl+Maj+S) en fait une copie `.dgd`, PDF compris ;
+  les anciens fichiers `.json` restent lisibles et se convertissent ainsi. Un fichier `.lock` voisin signale le poste
   qui l'a ouvert ; les autres passent en lecture seule.
 - **PDF joints** (un par ligne d'engagement, de facture ou de note d'honoraires) : dossier
   `<nom du fichier> - PDF` à côté du fichier de données, synchronisé par Dropbox lui aussi.
@@ -37,7 +39,7 @@ l'installe puis relance AGOA DGD, sans intervention. En cours d'utilisation,
   `%APPDATA%\AGOA DGD\sauvegardes` (menu **Fichier › Ouvrir le dossier des sauvegardes**).
 
 Les données de la version en ligne (claude.ai) se reprennent avec son bouton
-« Exporter les données », puis en ouvrant le fichier obtenu dans l'application.
+« Exporter les données » : ouvrir le `.json` obtenu dans l'application, puis l'enregistrer au format `.dgd`.
 
 ## Publier un déploiement
 

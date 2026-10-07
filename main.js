@@ -25,6 +25,7 @@ let backedUpThisSession = new Set();
 // Variables de test (non utilisées en usage normal)
 const TEST_DATA = process.env.SF_TEST_DATA || null;
 const TEST_OUT = process.env.SF_TEST_OUT || null;
+const TEST_SAVEAS = process.env.SF_TEST_SAVEAS || null;
 
 /* ---------- configuration locale (dernier fichier ouvert) ---------- */
 const cfgFile = () => path.join(app.getPath("userData"), "config.json");
@@ -101,6 +102,13 @@ function setDataPath(p) {
   watch(p);
 }
 
+const EXT = ".dgd";
+const OPEN_FILTERS = [{ name: "Dossiers AGOA DGD", extensions: ["dgd", "json"] }];
+const SAVE_FILTERS = [{ name: "Dossier AGOA DGD", extensions: ["dgd"] }];
+const isDataFile = f => typeof f === "string" && /\.(dgd|json)$/i.test(f) && fs.existsSync(f);
+const fileFromArgv = argv => (argv || []).slice(1).find(a => !a.startsWith("-") && isDataFile(a)) || null;
+const withExt = f => /\.dgd$/i.test(f) ? f : f.replace(/\.json$/i, "") + EXT;
+const emptyData = () => JSON.stringify({ format: "agoa-dgd", version: 1, savedAt: new Date().toISOString(), projects: {} }, null, 1);
 function defaultDir() {
   const dbx = path.join(os.homedir(), "Dropbox");
   return fs.existsSync(dbx) ? dbx : app.getPath("documents");
@@ -131,7 +139,9 @@ function createWindow() {
 
 const menu = Menu.buildFromTemplate([
   { label: "Fichier", submenu: [
-    { label: "Changer de fichier de données…", click: () => win && win.webContents.send("menu:change-file") },
+    { label: "Ouvrir…", accelerator: "CmdOrCtrl+O", click: () => win && win.webContents.send("menu:change-file") },
+    { label: "Enregistrer sous…", accelerator: "CmdOrCtrl+Shift+S", click: () => win && win.webContents.send("menu:save-as") },
+    { type: "separator" },
     { label: "Afficher le fichier dans l'Explorateur", click: () => dataPath && shell.showItemInFolder(dataPath) },
     { label: "Ouvrir le dossier des sauvegardes", click: () => { const d = path.join(app.getPath("userData"), "sauvegardes"); fs.mkdirSync(d, { recursive: true }); shell.openPath(d); } },
     { type: "separator" },
@@ -175,24 +185,45 @@ ipcMain.handle("data:choose", async (_e, mode) => {
   if (mode === "create") {
     const r = await dialog.showSaveDialog(win, {
       title: "Créer le fichier de données",
-      defaultPath: path.join(defaultDir(), "suivi-financier.json"),
-      filters: [{ name: "Données suivi financier", extensions: ["json"] }]
+      defaultPath: path.join(defaultDir(), "suivi-financier" + EXT),
+      filters: SAVE_FILTERS
     });
     if (r.canceled || !r.filePath) return null;
-    const empty = JSON.stringify({ format: "suivi-financier", version: 1, savedAt: new Date().toISOString(), projects: {} }, null, 1);
-    fs.writeFileSync(r.filePath, empty, "utf8");
-    setDataPath(r.filePath);
+    const f = withExt(r.filePath);
+    fs.writeFileSync(f, emptyData(), "utf8");
+    setDataPath(f);
   } else {
     const r = await dialog.showOpenDialog(win, {
       title: "Ouvrir un fichier de données",
       defaultPath: defaultDir(),
       properties: ["openFile"],
-      filters: [{ name: "Données suivi financier", extensions: ["json"] }]
+      filters: OPEN_FILTERS
     });
     if (r.canceled || !r.filePaths[0]) return null;
     setDataPath(r.filePaths[0]);
   }
   return readState();
+});
+
+// Ouvrir un fichier précis (double-clic sur un .dgd alors que l'application est déjà lancée)
+ipcMain.handle("data:open-path", (_e, f) => { if (!isDataFile(f)) return null; setDataPath(f); return readState(); });
+
+// Enregistrer sous : copie du dossier courant au format .dgd (avec ses PDF), puis on travaille sur la copie
+ipcMain.handle("data:save-as", async (_e, obj) => {
+  const base = dataPath ? path.join(path.dirname(dataPath), path.basename(dataPath, path.extname(dataPath)) + EXT) : path.join(defaultDir(), "suivi-financier" + EXT);
+  const r = TEST_SAVEAS ? { filePath: TEST_SAVEAS } : await dialog.showSaveDialog(win, { title: "Enregistrer sous", defaultPath: base, filters: SAVE_FILTERS });
+  if (r.canceled || !r.filePath) return null;
+  const f = withExt(r.filePath);
+  if (dataPath && path.resolve(f).toLowerCase() === path.resolve(dataPath).toLowerCase()) return readState();
+  try {
+    const oldPdf = pdfDir();
+    const txt = JSON.stringify({ format: "agoa-dgd", version: 1, savedAt: new Date().toISOString(), savedBy: ME, projects: obj.projects }, null, 1);
+    fs.writeFileSync(f, txt, "utf8");
+    const newPdf = pdfDirFor(f);
+    if (oldPdf && fs.existsSync(oldPdf) && path.resolve(oldPdf) !== path.resolve(newPdf)) fs.cpSync(oldPdf, newPdf, { recursive: true, force: false, errorOnExist: false });
+    setDataPath(f); lastWritten = txt; takeLock();
+    return readState();
+  } catch (e) { return { path: null, error: "Enregistrement impossible : " + e.message }; }
 });
 
 ipcMain.handle("data:take-lock", () => { takeLock(); return true; });
@@ -201,7 +232,7 @@ ipcMain.handle("data:write", (_e, obj) => {
   if (!dataPath) return { ok: false, error: "Aucun fichier de données." };
   try {
     backup();
-    const txt = JSON.stringify({ format: "suivi-financier", version: 1, savedAt: new Date().toISOString(), savedBy: ME, projects: obj.projects }, null, 1);
+    const txt = JSON.stringify({ format: "agoa-dgd", version: 1, savedAt: new Date().toISOString(), savedBy: ME, projects: obj.projects }, null, 1);
     const tmp = path.join(path.dirname(dataPath), "." + path.basename(dataPath) + ".tmp");
     fs.writeFileSync(tmp, txt, "utf8");
     fs.renameSync(tmp, dataPath);           // écriture atomique : jamais de fichier à moitié écrit
@@ -358,7 +389,8 @@ function manualUpdateCheck() {
 }
 
 /* ---------- pièces jointes PDF (dossier voisin du fichier de données) ---------- */
-const pdfDir = () => dataPath ? path.join(path.dirname(dataPath), path.basename(dataPath, ".json") + " - PDF") : null;
+const pdfDirFor = f => path.join(path.dirname(f), path.basename(f, path.extname(f)) + " - PDF");
+const pdfDir = () => dataPath ? pdfDirFor(dataPath) : null;
 const okId = id => typeof id === "string" && /^[a-f0-9]{32}$/.test(id);
 ipcMain.handle("pdf:save", (_e, { name, data }) => {
   const dir = pdfDir(); if (!dir) return { ok: false, code: "quota_or_state" };
@@ -392,7 +424,13 @@ ipcMain.handle("pdf:open", (_e, id) => {
 const single = app.requestSingleInstanceLock();
 if (!single) { app.quit(); }
 else {
-  app.on("second-instance", () => { if (win) { if (win.isMinimized()) win.restore(); win.focus(); } });
+  app.on("second-instance", (_e, argv) => {
+    if (!win) return;
+    if (win.isMinimized()) win.restore(); win.focus();
+    const f = fileFromArgv(argv);
+    if (f) win.webContents.send("menu:open-path", f);
+  });
+  { const f = fileFromArgv(process.argv); if (f) app.whenReady().then(() => setDataPath(f)); }
   app.whenReady().then(async () => {
     Menu.setApplicationMenu(menu);
     showSplash();

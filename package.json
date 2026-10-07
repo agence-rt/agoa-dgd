@@ -58,6 +58,15 @@
         "repo": "agoa-dgd",
         "releaseType": "release"
       }
+    ],
+    "fileAssociations": [
+      {
+        "ext": "dgd",
+        "name": "Dossier AGOA DGD",
+        "description": "Dossier de suivi financier AGOA DGD",
+        "icon": "dgd",
+        "role": "Editor"
+      }
     ]
   },
   "dependencies": {
