@@ -27,11 +27,12 @@
   --bar-eng:#334247; --bar-fac:#6FB8AE; --green:#7CC47F; color-scheme:dark;}
 html{scroll-padding-top:env(safe-area-inset-top,0px)}
 *,*::before,*::after{box-sizing:inherit}
+body:not(.pdf){zoom:1.1}
 body{margin:0;background:var(--paper);color:var(--ink);font-family:"Archivo",system-ui,-apple-system,"Segoe UI",sans-serif;font-size:15px;line-height:1.45;font-variant-numeric:tabular-nums}
 button,input,select{font:inherit;color:inherit}
 a{color:var(--accent)}
 :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-.wrap{max-width:1320px;margin:0 auto;padding:20px 20px 60px}
+.wrap{max-width:1560px;margin:0 auto;padding:20px 20px 60px}
 
 /* top bar */
 .top{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:18px}
@@ -92,9 +93,9 @@ a{color:var(--accent)}
 
 /* tables */
 .tscroll{overflow-x:auto;margin:0 -4px;padding:0 4px}
-table{border-collapse:collapse;width:100%;font-size:14px}
-th{font-weight:600;font-size:12.5px;color:var(--muted);text-align:left;padding:6px 6px;border-bottom:1px solid var(--line);white-space:nowrap}
-td{padding:3px 6px;border-bottom:1px solid var(--line);vertical-align:middle}
+table{border-collapse:collapse;width:100%;font-size:15px}
+th{font-weight:600;font-size:13px;color:var(--muted);text-align:left;padding:6px 6px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:4px 6px;border-bottom:1px solid var(--line);vertical-align:middle}
 th.n,td.n{text-align:right}
 td.calc{color:var(--muted);white-space:nowrap}
 td.ttc{font-weight:700;color:var(--ink)}
@@ -120,10 +121,10 @@ table.fit td.calc{overflow:hidden;text-overflow:ellipsis}
 td input[type="date"]{padding:5px 2px}
 .c-AE{width:72px}.c-num{width:60px}.c-code{width:152px}.c-date{width:122px}.c-ht{width:120px}.c-tva{width:78px}.c-mt{width:102px}.c-ttc{width:124px}.c-x{width:30px}
 .c-sit{width:40px}.c-mis{width:98px}.c-rg{width:50px}.c-etat{width:104px}
-.c-lot{width:17%}.c-ent{width:13%}
+.c-lot{width:14%}.c-ent{width:10%}.c-av{width:8%}
 th.n,td.n{white-space:nowrap}
 table.wide{width:max(100%,780px)}
-table.xwide{width:max(100%,860px)}
+table.xwide{width:max(100%,930px)}
 .ro{display:block;padding:4px 6px;white-space:normal}
 .ro.n{text-align:right;white-space:nowrap}
 .lothead{display:flex;align-items:center;gap:22px;margin-bottom:18px}
@@ -279,7 +280,7 @@ body.viewing .phead.compact .hlogo{max-height:56px}
 @media (max-width:900px){.viewer{width:100vw}body.viewing .wrap{margin-right:0}}
 .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--surface);padding:9px 16px;border-radius:6px;font-size:14px;z-index:20}
 
-@media (max-width:1100px){
+@media (max-width:1440px){
   .shell{grid-template-columns:1fr}
   .nav{position:static;flex-direction:row;overflow-x:auto;gap:4px;padding-bottom:6px}
   .nav .grp{display:none}
@@ -596,7 +597,7 @@ function lotView(p,l){
       <td>${inp(`${base}.engagements.${e.id}.numAE`,e.numAE)}</td>
       <td>${inp(`${base}.engagements.${e.id}.code`,e.code)}</td>
       <td>${inp(`${base}.engagements.${e.id}.date`,e.date,"date")}</td>
-      <td class="lib">${inp(`${base}.engagements.${e.id}.libelle`,e.libelle)}</td>
+      <td class="lib">${inp(`${base}.engagements.${e.id}.libelle`,e.libelle,"text","",`title="${esc(e.libelle)}"`)}</td>
       <td>${inp(`${base}.engagements.${e.id}.ht`,e.type==="MV"?Math.abs(+e.ht||0):e.ht,"num","n")}</td>
       <td>${tvaSel(`${base}.engagements.${e.id}.tva`,e.tva)}</td>
       <td class="n calc col-tva">${fmtE(tv)}</td><td class="n calc ttc">${fmtE(h+tv)}</td>
@@ -831,7 +832,7 @@ function synthView(p,C){
   <section class="panel">
     <h2>Décompte ${p.statut==="DGD signé"?"général définitif":"général provisoire"} (${sfx})</h2>
     <div class="tscroll"><table class="xwide fit">
-      <thead><tr><th class="c-lot">Lot</th><th class="c-ent">Entreprise</th><th class="n">Marché initial</th><th class="n">Avenants</th><th class="n">Moins-values</th><th class="n">Marché actualisé</th><th class="n">Facturé</th><th class="n">Reste à facturer</th><th class="n">Avancement</th></tr></thead>
+      <thead><tr><th class="c-lot">Lot</th><th class="c-ent">Entreprise</th><th class="n">Marché initial</th><th class="n">Avenants</th><th class="n">Moins-values</th><th class="n">Marché actualisé</th><th class="n">Facturé</th><th class="n">Reste à facturer</th><th class="n c-av">Avancement</th></tr></thead>
       <tbody>${rows}
         <tr class="total"><td colspan="2">Total travaux</td><td class="n">${v(T.ini,T.iniT)}</td><td class="n">${v(T.av,T.avT)}</td><td class="n">${v(T.mv,T.mvT)}</td><td class="n">${v(T.marche,T.marcheT)}</td><td class="n">${v(T.fac,T.facT)}</td><td class="n">${v(T.reste,T.resteT)}</td><td class="n">${fmtP(T.pct)}</td></tr>
         <tr><td colspan="2" style="padding-top:12px"><button class="btn ghost small" style="padding:2px 4px" data-act="tab" data-tab="archi">Honoraires architecte</button></td><td colspan="3" class="note" style="padding-top:12px">${fmtP(p.archi.taux)} des travaux, forfait études inclus</td><td class="n" style="padding-top:12px">${v(A.total,A.totalT)}</td><td class="n" style="padding-top:12px">${v(A.fac,A.facT)}</td><td class="n" style="padding-top:12px">${v(A.reste,A.resteT)}</td><td class="n" style="padding-top:12px">${fmtP(A.pct)}</td></tr>

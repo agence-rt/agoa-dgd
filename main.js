@@ -119,7 +119,7 @@ function defaultDir() {
 /* ---------- fenêtre ---------- */
 function createWindow() {
   win = new BrowserWindow({
-    width: 1400, height: 900, minWidth: 900, minHeight: 600,
+    width: +(process.env.SF_TEST_W||1400), height: 900, minWidth: 900, minHeight: 600,
     title: `AGOA DGD — v${INFO.version}`, show: false,
     icon: path.join(__dirname, "build", "icon.ico"),
     backgroundColor: "#FFFFFF",
