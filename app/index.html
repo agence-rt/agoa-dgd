@@ -11,19 +11,19 @@
 @font-face{font-family:"Archivo";font-style:normal;font-weight:100 900;font-stretch:62% 125%;src:url(fonts/archivo-latin-wdth-normal.woff2) format("woff2-variations");unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
 @font-face{font-family:"Archivo";font-style:normal;font-weight:100 900;font-stretch:62% 125%;src:url(fonts/archivo-latin-ext-wdth-normal.woff2) format("woff2-variations");unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF}
 :root{
-  --paper:#EEF0EC; --surface:#FFFFFF; --sunk:#F6F7F4; --ink:#1C2B33; --muted:#5E6B70; --line:#D3D8D2;
-  --accent:#1F5F5B; --accent-soft:#D9E8E4; --ochre:#9A6511; --ochre-soft:#F3E6CF; --neg:#A63D32; --neg-soft:#F4DEDA;
+  --paper:#EEF0EC; --surface:#FFFFFF; --sunk:#F6F7F4; --ink:#1C2B33; --muted:#1C2B33; --line:#D3D8D2;
+  --accent:#1F5F5B; --accent-soft:#D9E8E4; --ochre:#9A6511; --ochre-soft:#F3E6CF; --neg:#D3141B; --neg-soft:#FBDADB;
   --bar-eng:#C7D3CF; --bar-fac:#1F5F5B; --green:#2E7D32;
   box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
   color-scheme:light;
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
-  --paper:#141B1E; --surface:#1C2529; --sunk:#172024; --ink:#E4EAEA; --muted:#93A2A5; --line:#2F3C40;
-  --accent:#6FB8AE; --accent-soft:#1E3734; --ochre:#E0A84A; --ochre-soft:#3A2E1A; --neg:#E58A7E; --neg-soft:#3D2420;
+  --paper:#141B1E; --surface:#1C2529; --sunk:#172024; --ink:#E4EAEA; --muted:#E4EAEA; --line:#2F3C40;
+  --accent:#6FB8AE; --accent-soft:#1E3734; --ochre:#E0A84A; --ochre-soft:#3A2E1A; --neg:#FF6B6B; --neg-soft:#3D2420;
   --bar-eng:#334247; --bar-fac:#6FB8AE; --green:#7CC47F; color-scheme:dark;}}
 :root[data-theme="dark"]{
-  --paper:#141B1E; --surface:#1C2529; --sunk:#172024; --ink:#E4EAEA; --muted:#93A2A5; --line:#2F3C40;
-  --accent:#6FB8AE; --accent-soft:#1E3734; --ochre:#E0A84A; --ochre-soft:#3A2E1A; --neg:#E58A7E; --neg-soft:#3D2420;
+  --paper:#141B1E; --surface:#1C2529; --sunk:#172024; --ink:#E4EAEA; --muted:#E4EAEA; --line:#2F3C40;
+  --accent:#6FB8AE; --accent-soft:#1E3734; --ochre:#E0A84A; --ochre-soft:#3A2E1A; --neg:#FF6B6B; --neg-soft:#3D2420;
   --bar-eng:#334247; --bar-fac:#6FB8AE; --green:#7CC47F; color-scheme:dark;}
 html{scroll-padding-top:env(safe-area-inset-top,0px)}
 *,*::before,*::after{box-sizing:inherit}
@@ -166,6 +166,48 @@ body.pdf h2,body.pdf .panel-head{break-after:avoid}
 @media print{html,body{background:#FFFFFF!important}.toast,.viewer{display:none!important}}
 body.pdf .keep{break-inside:avoid}
 html.printing{--paper:#FFFFFF;background:#FFFFFF}
+/* À l'impression la page est rendue à l'échelle 1 sur la largeur utile d'un A4 (≈ 700 px) : 16 px = 12 pt */
+html.printing body.pdf{font-size:14px}
+html.printing body.pdf .wrap{width:700px}
+html.printing body.pdf .phead{gap:12px;padding-bottom:10px;margin-bottom:12px}
+html.printing body.pdf .phead h1{font-size:30px}
+html.printing body.pdf .phead.compact h1{font-size:21px}
+html.printing body.pdf .phead .kicker,html.printing body.pdf .phead .ref{font-size:12px}
+html.printing body.pdf .phead .sub{font-size:13px}
+html.printing body.pdf .phead .hlogo{max-height:58px;max-width:190px}
+html.printing body.pdf .pdf-title{font-size:19px;margin-bottom:10px}
+html.printing body.pdf .lothead{gap:14px;margin-bottom:12px}
+html.printing body.pdf .lothead h2{font-size:24px}
+html.printing body.pdf .lothead .ent{font-size:14px}
+html.printing body.pdf .logo img{max-height:60px;max-width:180px}
+html.printing body.pdf .balance{grid-auto-flow:row;grid-template-columns:repeat(3,minmax(0,1fr));margin-bottom:12px}
+html.printing body.pdf .balance div{padding:8px 10px}
+html.printing body.pdf .balance div:nth-child(3n){border-right:0}
+html.printing body.pdf .balance div:nth-child(n+4){border-top:1px solid var(--line)}
+html.printing body.pdf .balance small,html.printing body.pdf .balance em{font-size:12px}
+html.printing body.pdf .balance strong{font-size:17px}
+html.printing body.pdf .panel{padding:12px 14px;margin-bottom:12px}
+html.printing body.pdf .panel h2{font-size:17px}
+html.printing body.pdf .panel-head{margin-bottom:6px}
+html.printing body.pdf .note{font-size:12.5px}
+html.printing body.pdf table{font-size:15px}
+html.printing body.pdf th{font-size:12px;padding:4px 3px}
+html.printing body.pdf td{padding:4px 3px}
+html.printing body.pdf td .ro{padding:2px 2px;white-space:normal}
+html.printing body.pdf td .ro.n{white-space:nowrap}
+/* lignes comptables des lots : 12 pt ; la colonne « Montant TVA » est retirée pour laisser la place */
+html.printing body.pdf table.wide{font-size:16px}
+html.printing body.pdf table.wide .col-tva{display:none}
+html.printing body.pdf .c-AE{width:32px}html.printing body.pdf .c-num{width:40px}html.printing body.pdf .c-code{width:144px}html.printing body.pdf .c-date{width:86px}
+html.printing body.pdf .c-ht{width:104px}html.printing body.pdf .c-tva{width:44px}html.printing body.pdf .c-ttc{width:108px}html.printing body.pdf .c-x{width:0;padding:0}
+/* tableaux à nombreuses colonnes (décompte, notes d'honoraires) */
+html.printing body.pdf table.xwide{font-size:12px}
+html.printing body.pdf table.xwide .c-sit{width:30px}html.printing body.pdf table.xwide .c-mis{width:62px}html.printing body.pdf table.xwide .c-rg{width:40px}html.printing body.pdf table.xwide .c-etat{width:70px}
+html.printing body.pdf table.xwide .c-ht{width:78px}html.printing body.pdf table.xwide .c-tva{width:38px}html.printing body.pdf table.xwide .c-mt{width:80px}html.printing body.pdf table.xwide .c-date{width:66px}
+html.printing body.pdf .tag{font-size:11px;padding:1px 4px}
+html.printing body.pdf .barrow{grid-template-columns:150px minmax(0,1fr) 150px;gap:10px}
+html.printing body.pdf .barrow .lbl small,html.printing body.pdf .barrow .val,html.printing body.pdf .legend{font-size:12.5px}
+html.printing body.pdf .barrow .val b{font-size:15px}
 .home{max-width:620px;margin:7vh auto 0;display:flex;flex-direction:column;align-items:center}
 .home .hlogo2{width:126px;height:126px;border-radius:24px;background:#B3261E;display:flex;align-items:center;justify-content:center;color:#fff;font-family:"Segoe UI",system-ui,Arial,sans-serif;font-weight:700;font-size:33px}
 .home .hword{margin-top:22px;font-family:"Segoe UI",system-ui,Arial,sans-serif;font-size:25px;font-weight:700;letter-spacing:.22em;color:var(--ink)}
@@ -891,7 +933,7 @@ async function exportPdf(all){
     app.innerHTML=html;
     if(document.fonts&&document.fonts.ready) await document.fonts.ready;
     await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
-    const r=await window.desktop.printPdf({defaultName:`DGD ${p.nom} - ${label}.pdf`, footerLeft:`${p.nom} — édité le ${new Date().toLocaleDateString("fr-FR")}`, scale:0.62});
+    const r=await window.desktop.printPdf({defaultName:`DGD ${p.nom} - ${label}.pdf`, footerLeft:`${p.nom} — édité le ${new Date().toLocaleDateString("fr-FR")}`, scale:1});
     if(r&&r.error) toast("Le PDF n'a pas pu être créé : "+r.error);
   } finally {
     S.pdf=false; document.body.classList.remove("pdf"); root.classList.remove("printing");

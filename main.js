@@ -271,7 +271,7 @@ ipcMain.handle("pdf:print", async (_e, { defaultName, footerLeft, scale }) => {
       margins: { top: 0.45, bottom: 0.6, left: 0.47, right: 0.47 },
       displayHeaderFooter: true,
       headerTemplate: "<span></span>",
-      footerTemplate: `<div style="width:100%;font-family:Segoe UI,Arial,sans-serif;font-size:8px;color:#6b7478;padding:0 12mm;display:flex;justify-content:space-between">
+      footerTemplate: `<div style="width:100%;font-family:Segoe UI,Arial,sans-serif;font-size:9px;color:#1C2B33;padding:0 12mm;display:flex;justify-content:space-between">
         <span>${esc(footerLeft || "")}</span><span><span class="pageNumber"></span> / <span class="totalPages"></span></span></div>`
     });
     fs.writeFileSync(r.filePath, pdf);
