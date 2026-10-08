@@ -1,1 +1,1 @@
-Déploiement n°6 — Un DGD = une opération : un nouveau DGD ouvre directement la fiche de l'opération (sans page de création), un DGD existant s'ouvre directement sur sa synthèse
+Déploiement n°7 — Textes agrandis pour une meilleure lisibilité des lignes comptables ; contenu plus large sur grands écrans ; désignation complète au survol

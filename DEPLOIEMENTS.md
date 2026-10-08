@@ -1,5 +1,6 @@
 # Déploiements AGOA DGD
 
+- **n°7** — v1.7.0 — 2026-10-08 — Textes agrandis pour une meilleure lisibilité des lignes comptables ; contenu plus large sur grands écrans ; désignation complète au survol
 - **n°6** — v1.6.0 — 2026-10-08 — Un DGD = une opération : un nouveau DGD ouvre directement la fiche de l'opération (sans page de création), un DGD existant s'ouvre directement sur sa synthèse
 - **n°5** — v1.5.0 — 2026-10-08 — Nouvel accueil : logo, Créer un nouveau DGD, Ouvrir un fichier et liste des fichiers récents ; Fichier › Fermer le dossier (Ctrl+W) pour y revenir
 - **n°4** — v1.4.0 — 2026-10-07 — Format de fichier .dgd (double-clic pour ouvrir) ; Fichier › Enregistrer sous (Ctrl+Maj+S), PDF joints compris ; conversion des anciens fichiers .json

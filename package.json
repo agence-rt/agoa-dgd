@@ -1,12 +1,12 @@
 {
   "name": "agoa-dgd",
   "productName": "AGOA DGD",
-  "version": "1.6.0",
+  "version": "1.7.0",
   "description": "AGOA DGD — suivi financier des chantiers : lots, avenants, factures, honoraires d'architecte et décompte général.",
   "author": "SELARL Rémi Thollet Architecte",
   "main": "main.js",
   "agoa": {
-    "deploiement": 6
+    "deploiement": 7
   },
   "scripts": {
     "start": "electron .",
