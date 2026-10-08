@@ -1,1 +1,1 @@
-Déploiement n°4 — Format de fichier .dgd (double-clic pour ouvrir) ; Fichier › Enregistrer sous (Ctrl+Maj+S), PDF joints compris ; conversion des anciens fichiers .json
+Déploiement n°5 — Nouvel accueil : logo, Créer un nouveau DGD, Ouvrir un fichier et liste des fichiers récents ; Fichier › Fermer le dossier (Ctrl+W) pour y revenir

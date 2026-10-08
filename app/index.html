@@ -165,10 +165,29 @@ body.pdf h2,body.pdf .panel-head{break-after:avoid}
 @media print{html,body{background:#FFFFFF!important}.toast,.viewer{display:none!important}}
 body.pdf .keep{break-inside:avoid}
 html.printing{--paper:#FFFFFF;background:#FFFFFF}
-.welcome{max-width:640px;margin:8vh auto 0;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:32px 34px}
-.welcome h1{margin:0 0 10px;font-stretch:70%;font-weight:800;font-size:44px;line-height:1}
-.welcome p{color:var(--muted);margin:0 0 22px}
-.welcome .acts{display:flex;gap:10px;flex-wrap:wrap}
+.home{max-width:620px;margin:7vh auto 0;display:flex;flex-direction:column;align-items:center}
+.home .hlogo2{width:126px;height:126px;border-radius:24px;background:#B3261E;display:flex;align-items:center;justify-content:center;color:#fff;font-family:"Segoe UI",system-ui,Arial,sans-serif;font-weight:700;font-size:33px}
+.home .hword{margin-top:22px;font-family:"Segoe UI",system-ui,Arial,sans-serif;font-size:25px;font-weight:700;letter-spacing:.22em;color:var(--ink)}
+.home .hword span{color:#B3261E}
+.home .hacts{display:grid;grid-template-columns:1fr 1fr;gap:12px;width:100%;margin-top:38px}
+.home .hbtn{display:flex;align-items:center;gap:12px;padding:16px 18px;border:1px solid var(--line);border-radius:10px;background:var(--surface);cursor:pointer;font-size:16px;font-weight:600;text-align:left}
+.home .hbtn:hover{border-color:#B3261E}
+.home .hbtn i{font-style:normal;width:34px;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;background:var(--sunk);color:var(--ink)}
+.home .hbtn.primary i{background:#B3261E;color:#fff}
+.home .hrec{width:100%;margin-top:34px}
+.home .hrec h2{font-size:13px;font-weight:600;color:var(--muted);margin:0 0 8px}
+.home .hrec ul{list-style:none;margin:0;padding:0;border:1px solid var(--line);border-radius:10px;background:var(--surface);overflow:hidden}
+.home .hrec li{display:flex;align-items:center;border-top:1px solid var(--line)}
+.home .hrec li:first-child{border-top:0}
+.home .hrec .rf{flex:1;min-width:0;display:block;border:0;background:transparent;text-align:left;padding:10px 14px;cursor:pointer}
+.home .hrec .rf:hover{background:var(--sunk)}
+.home .hrec .rf b{display:block;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.home .hrec .rf small{display:block;color:var(--muted);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.home .hrec .rf[disabled]{cursor:default;opacity:.55}
+.home .hrec .rx{border:0;background:transparent;color:var(--muted);padding:8px 12px;cursor:pointer;font-size:16px}
+.home .hrec .rx:hover{color:var(--neg)}
+.home .hrec .none{padding:14px;color:var(--muted);font-size:13px}
+.home .herr{margin-top:16px;color:var(--neg);font-size:13px}
 .banner{background:var(--ochre-soft);color:var(--ink);border-radius:8px;padding:12px 16px;margin-bottom:16px;display:flex;gap:14px;align-items:center;flex-wrap:wrap}
 .banner span{flex:1;min-width:240px}
 .filechip{font-size:13px;color:var(--muted);border:1px solid var(--line);border-radius:6px;padding:5px 10px;background:var(--surface);cursor:pointer;max-width:340px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -371,7 +390,7 @@ function toast(msg){ const d=document.createElement("div"); d.className="toast";
 
 function loadState(st){
   S.error=null; S.lockedBy=null;
-  if(!st||!st.path){ S.file=null; S.projects={}; S.ready=true; render(); return; }
+  if(!st||!st.path){ S.file=null; S.projects={}; S.recent=(st&&st.recent)||S.recent||[]; if(st&&st.error) S.error=st.error; S.ready=true; render(); return; }
   S.file={path:st.path, name:st.name};
   if(st.error){ S.error=st.error; S.projects={}; S.ready=true; S.canWrite=false; render(); return; }
   const c=st.content||{};
@@ -381,6 +400,19 @@ function loadState(st){
   else { S.canWrite=true; window.desktop.takeLock(); }
   S.ready=true; setSync(S.canWrite?"Enregistré":"Lecture seule");
   render();
+}
+async function closeFile(){
+  if(!S.file) return;
+  await flushSave();
+  if(S.viewer) closeViewer();
+  S.view={pid:null,tab:"synth"};
+  loadState(await window.desktop.close());
+}
+async function openRecent(f){
+  await flushSave();
+  const st=await window.desktop.openPath(f);
+  if(st){ S.view={pid:null,tab:"synth"}; loadState(st); }
+  else { toast("Ce fichier est introuvable (déplacé, renommé ou pas encore synchronisé par Dropbox)."); S.recent=await window.desktop.recent(); render(); }
 }
 async function saveAs(){
   if(!S.file) return;
@@ -410,6 +442,7 @@ async function initDesktop(){
   });
   window.desktop.onChangeFile(()=>chooseFile("open"));
   window.desktop.onSaveAsMenu(()=>saveAs());
+  window.desktop.onCloseMenu(()=>closeFile());
   window.desktop.onOpenPath(async f=>{ await flushSave(); const st=await window.desktop.openPath(f); if(st){ S.view={pid:null,tab:"synth"}; loadState(st); } });
   loadState(await window.desktop.state());
 }
@@ -443,8 +476,9 @@ function render(){
   if(focusKey){ const el=app.querySelector(`[data-p="${CSS.escape(focusKey)}"]`); if(el) el.focus(); }
 }
 function topBar(){
+  if(!S.file) return "";
   return `<div class="top">
-    ${S.view.pid?`<button class="btn ghost" data-act="home">← Toutes les opérations</button>`:`<span class="brand">Suivi financier des chantiers</span>`}
+    ${S.view.pid?`<button class="btn ghost" data-act="home">← Toutes les opérations</button>`:`<button class="btn ghost" data-act="closefile" title="Ctrl+W">← Accueil</button>`}
     <span class="spacer"></span>
     <span class="sync" id="sync">${esc(S.syncText||"")}</span>
     ${S.file?`<button class="filechip" data-act="changefile" title="${esc(S.file.path)} — cliquer pour ouvrir un autre dossier">${esc(S.file.name)}</button><button class="btn" data-act="saveas" title="Ctrl+Maj+S">Enregistrer sous…</button>`:""}
@@ -461,11 +495,23 @@ function listView(){
       <span class="pnums"><span>Marchés <b>${fmtK(T.marche)} HT</b></span><span>Facturé <b>${fmtP(T.pct)}</b></span></span>
       <span class="pnums"><span>${p.lots.length} lot${p.lots.length>1?"s":""}</span><span>Honoraires facturés <b>${fmtP(A.pct)}</b></span></span>
     </button>`;}).join("");
-  if(S.ready && !S.file) return `<div class="welcome"><h1>AGOA DGD</h1>
-      <p>Les opérations sont enregistrées dans un dossier AGOA DGD (fichier .dgd). Placez-le dans votre dossier Dropbox pour que vos collègues puissent le reprendre depuis leur poste. Les PDF joints sont rangés dans un dossier à côté de ce fichier.</p>
-      ${S.error?`<p class="neg">${esc(S.error)}</p>`:""}
-      <div class="acts"><button class="btn primary" data-act="openfile">Ouvrir un dossier .dgd</button><button class="btn" data-act="createfile">Créer un nouveau dossier</button></div>
-      <p style="margin:18px 0 0;font-size:13px">Pour reprendre les opérations saisies dans la version en ligne, utilisez son bouton « Exporter les données », ouvrez ici le fichier .json obtenu, puis enregistrez-le au format .dgd.</p></div>`;
+  if(!S.file){
+    const rec=(S.recent||[]);
+    const fmtDate=t=>t?new Date(t).toLocaleDateString("fr-FR",{day:"2-digit",month:"2-digit",year:"numeric"})+" "+new Date(t).toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"}):"";
+    return `<div class="home">
+      <div class="hlogo2">AGOA</div>
+      <div class="hword">AGOA <span>DGD</span></div>
+      <div class="hacts">
+        <button class="hbtn primary" data-act="createfile"><i>+</i>Créer un nouveau DGD</button>
+        <button class="hbtn" data-act="openfile"><i>↗</i>Ouvrir un fichier</button>
+      </div>
+      ${S.error?`<div class="herr">${esc(S.error)}</div>`:""}
+      <div class="hrec"><h2>Fichiers récents</h2>
+        ${rec.length?`<ul>${rec.map(r=>`<li><button class="rf" data-act="openrecent" data-f="${esc(r.path)}" ${r.exists?"":"disabled"} title="${esc(r.path)}"><b>${esc(r.name.replace(/\.(dgd|json)$/i,""))}</b><small>${r.exists?esc(r.dir)+(r.mtime?" — modifié le "+fmtDate(r.mtime):""):"Introuvable — "+esc(r.dir)}</small></button><button class="rx" data-act="forget" data-f="${esc(r.path)}" title="Retirer de la liste" aria-label="Retirer de la liste">×</button></li>`).join("")}</ul>`
+          :`<div class="none">Aucun fichier récent.</div>`}
+      </div>
+    </div>`;
+  }
   const banner = S.error ? `<div class="banner"><span>${esc(S.error)}</span><button class="btn" data-act="openfile">Ouvrir un autre fichier</button></div>`
     : (S.file && /\.json$/i.test(S.file.name) && !S.lockedBy) ? `<div class="banner"><span>Ce dossier est à l'ancien format .json. Enregistrez-le au format AGOA DGD (.dgd) : les PDF joints sont copiés avec lui.</span><button class="btn primary" data-act="saveas">Enregistrer au format .dgd</button></div>`
     : S.lockedBy ? `<div class="banner"><span>Ce fichier est ouvert par ${esc(S.lockedBy.user)} sur le poste ${esc(S.lockedBy.host)}. Vous êtes en lecture seule pour ne pas écraser son travail.</span><button class="btn" data-act="forceedit">Modifier quand même</button></div>` : "";
@@ -1030,6 +1076,9 @@ function handleAct(b){
     case "changefile": case "openfile": chooseFile("open"); return;
     case "createfile": chooseFile("create"); return;
     case "saveas": saveAs(); return;
+    case "closefile": closeFile(); return;
+    case "openrecent": openRecent(b.dataset.f); return;
+    case "forget": window.desktop.forget(b.dataset.f).then(l=>{ S.recent=l; render(); }); return;
     case "openpdfext": if(S.viewer) window.desktop.pdfOpen(S.viewer.id).then(ok=>{ if(!ok) toast("Fichier PDF introuvable (synchronisation Dropbox en cours ?)."); }); return;
     case "forceedit": S.lockedBy=null; S.canWrite=true; window.desktop.takeLock(); setSync("Enregistré"); break;
     case "pdf": exportPdf(b.dataset.all==="1"); return;

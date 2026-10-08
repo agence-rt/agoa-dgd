@@ -26,9 +26,15 @@ Si une version plus récente existe, l'écran l'indique, la télécharge (progre
 l'installe puis relance AGOA DGD, sans intervention. En cours d'utilisation,
 **Aide › Rechercher une mise à jour** propose la mise à jour.
 
+## Accueil
+
+Au lancement, l'accueil affiche le logo, **Créer un nouveau DGD**, **Ouvrir un fichier** et la liste
+des fichiers récents (un clic pour rouvrir, « × » pour retirer de la liste). **Fichier › Fermer le dossier**
+(Ctrl+W) ou le bouton « ← Accueil » y ramène. Un double-clic sur un `.dgd` ouvre directement le dossier.
+
 ## Données
 
-- **Dossier AGOA DGD** : un seul fichier **`.dgd`** choisi au premier lancement, à placer dans
+- **Dossier AGOA DGD** : un seul fichier **`.dgd`** par dossier, à placer dans
   Dropbox pour que les collègues puissent le reprendre. Un double-clic sur un `.dgd` l'ouvre dans
   AGOA DGD. **Fichier › Enregistrer sous** (Ctrl+Maj+S) en fait une copie `.dgd`, PDF compris ;
   les anciens fichiers `.json` restent lisibles et se convertissent ainsi. Un fichier `.lock` voisin signale le poste

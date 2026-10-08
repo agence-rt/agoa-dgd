@@ -98,7 +98,9 @@ function setDataPath(p) {
   if (dataPath === p) return;
   releaseLock(); unwatch(dataPath);
   dataPath = p; lastWritten = null;
-  const c = readCfg(); c.lastFile = p; writeCfg(c);
+  const c = readCfg(); c.lastFile = p;
+  c.recent = [p, ...(c.recent || (c.lastFile ? [c.lastFile] : [])).filter(x => x && path.resolve(x).toLowerCase() !== path.resolve(p).toLowerCase())].slice(0, 12);
+  writeCfg(c);
   watch(p);
 }
 
@@ -130,6 +132,7 @@ function createWindow() {
       try { await win.webContents.executeJavaScript(fs.readFileSync(process.env.SF_TEST_SCRIPT, "utf8")); }
       catch (e) { console.error("TEST ERROR", e); }
       const img = await win.webContents.capturePage(); fs.writeFileSync(path.join(TEST_OUT, "screen.png"), img.toPNG());
+      fs.writeFileSync(path.join(TEST_OUT, "title.txt"), win.getTitle() + "\n" + await win.webContents.executeJavaScript("document.title"));
       app.quit();
     });
   }
@@ -141,6 +144,7 @@ const menu = Menu.buildFromTemplate([
   { label: "Fichier", submenu: [
     { label: "Ouvrir…", accelerator: "CmdOrCtrl+O", click: () => win && win.webContents.send("menu:change-file") },
     { label: "Enregistrer sous…", accelerator: "CmdOrCtrl+Shift+S", click: () => win && win.webContents.send("menu:save-as") },
+    { label: "Fermer le dossier (accueil)", accelerator: "CmdOrCtrl+W", click: () => win && win.webContents.send("menu:close") },
     { type: "separator" },
     { label: "Afficher le fichier dans l'Explorateur", click: () => dataPath && shell.showItemInFolder(dataPath) },
     { label: "Ouvrir le dossier des sauvegardes", click: () => { const d = path.join(app.getPath("userData"), "sauvegardes"); fs.mkdirSync(d, { recursive: true }); shell.openPath(d); } },
@@ -166,15 +170,19 @@ const menu = Menu.buildFromTemplate([
 /* ---------- échanges avec l'interface ---------- */
 ipcMain.handle("data:state", () => {
   if (!dataPath && TEST_DATA) setDataPath(TEST_DATA);
-  if (!dataPath) {
-    const last = readCfg().lastFile;
-    if (last && fs.existsSync(last)) setDataPath(last);
-  }
   return readState();
 });
 
+function recentList() {
+  const c = readCfg();
+  const list = c.recent || (c.lastFile ? [c.lastFile] : []);
+  return list.map(f => {
+    let st = null; try { st = fs.statSync(f); } catch {}
+    return { path: f, name: path.basename(f), dir: path.dirname(f), exists: !!st, mtime: st ? st.mtimeMs : null };
+  });
+}
 function readState() {
-  if (!dataPath) return { path: null };
+  if (!dataPath) return { path: null, recent: recentList() };
   let content = null, error = null;
   try { content = JSON.parse(fs.readFileSync(dataPath, "utf8")); }
   catch (e) { error = fs.existsSync(dataPath) ? "Le fichier de données est illisible (synchronisation en cours ?)." : "Fichier introuvable."; }
@@ -205,6 +213,10 @@ ipcMain.handle("data:choose", async (_e, mode) => {
   return readState();
 });
 
+ipcMain.handle("data:recent", () => recentList());
+ipcMain.handle("data:forget", (_e, f) => { const c = readCfg(); c.recent = (c.recent || []).filter(x => x !== f); writeCfg(c); return recentList(); });
+// Fermer le dossier : retour à l'accueil
+ipcMain.handle("data:close", () => { releaseLock(); unwatch(dataPath); dataPath = null; lastWritten = null; return readState(); });
 // Ouvrir un fichier précis (double-clic sur un .dgd alors que l'application est déjà lancée)
 ipcMain.handle("data:open-path", (_e, f) => { if (!isDataFile(f)) return null; setDataPath(f); return readState(); });
 
