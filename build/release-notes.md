@@ -1,1 +1,1 @@
-Déploiement n°5 — Nouvel accueil : logo, Créer un nouveau DGD, Ouvrir un fichier et liste des fichiers récents ; Fichier › Fermer le dossier (Ctrl+W) pour y revenir
+Déploiement n°6 — Un DGD = une opération : un nouveau DGD ouvre directement la fiche de l'opération (sans page de création), un DGD existant s'ouvre directement sur sa synthèse

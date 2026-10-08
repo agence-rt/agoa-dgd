@@ -398,6 +398,11 @@ function loadState(st){
   if(S.view.pid && !S.projects[S.view.pid]) S.view={pid:null,tab:"synth"};
   if(st.lock){ S.lockedBy=st.lock; S.canWrite=false; }
   else { S.canWrite=true; window.desktop.takeLock(); }
+  const ids=Object.keys(S.projects);
+  if(!ids.length && S.canWrite){
+    const np=newProject(); np.nom=st.name.replace(/\.(dgd|json)$/i,"").replace(/[-_ ]*DGD$/i,"")||"Nouvelle opération";
+    S.projects[np.id]=np; S.view={pid:np.id,tab:"infos"}; persist(np);
+  } else if(ids.length===1){ S.view={pid:ids[0],tab:S.view.pid===ids[0]?S.view.tab:"synth"}; }
   S.ready=true; setSync(S.canWrite?"Enregistré":"Lecture seule");
   render();
 }
@@ -478,7 +483,7 @@ function render(){
 function topBar(){
   if(!S.file) return "";
   return `<div class="top">
-    ${S.view.pid?`<button class="btn ghost" data-act="home">← Toutes les opérations</button>`:`<button class="btn ghost" data-act="closefile" title="Ctrl+W">← Accueil</button>`}
+    ${S.view.pid&&Object.keys(S.projects).length>1?`<button class="btn ghost" data-act="home">← Toutes les opérations</button>`:`<button class="btn ghost" data-act="closefile" title="Ctrl+W">← Accueil</button>`}
     <span class="spacer"></span>
     <span class="sync" id="sync">${esc(S.syncText||"")}</span>
     ${S.file?`<button class="filechip" data-act="changefile" title="${esc(S.file.path)} — cliquer pour ouvrir un autre dossier">${esc(S.file.name)}</button><button class="btn" data-act="saveas" title="Ctrl+Maj+S">Enregistrer sous…</button>`:""}
@@ -516,7 +521,7 @@ function listView(){
     : (S.file && /\.json$/i.test(S.file.name) && !S.lockedBy) ? `<div class="banner"><span>Ce dossier est à l'ancien format .json. Enregistrez-le au format AGOA DGD (.dgd) : les PDF joints sont copiés avec lui.</span><button class="btn primary" data-act="saveas">Enregistrer au format .dgd</button></div>`
     : S.lockedBy ? `<div class="banner"><span>Ce fichier est ouvert par ${esc(S.lockedBy.user)} sur le poste ${esc(S.lockedBy.host)}. Vous êtes en lecture seule pour ne pas écraser son travail.</span><button class="btn" data-act="forceedit">Modifier quand même</button></div>` : "";
   return `${banner}<div class="plist-head"><h1>Opérations<br>en exécution</h1>
-    <span style="display:flex;gap:8px;flex-wrap:wrap">${S.canWrite?`<button class="btn primary" data-act="newproj">Créer une opération</button>`:""}</span></div>
+    <span style="display:flex;gap:8px;flex-wrap:wrap"></span></div>
     ${!S.ready?`<div class="empty">Chargement des opérations…</div>`:
       arr.length?`<div class="plist">${cards}</div>`:`<div class="empty">Aucune opération pour l'instant. Créez-en une pour saisir ses lots, ses actes d'engagement et ses factures.</div>`}`;
 }
@@ -775,7 +780,7 @@ function infosView(p){
       <div class="field"><label>TVA sur honoraires</label>${tvaSel("archi.tva",a.tva)}</div>
     </div>
   </section>
-    ${S.canWrite?`<section class="panel"><h2 style="margin-bottom:12px">Supprimer l'opération</h2>
+    ${S.canWrite&&Object.keys(S.projects).length>1?`<section class="panel"><h2 style="margin-bottom:12px">Supprimer l'opération</h2>
       <button class="btn danger" data-act="delproj">${S.confirmDel===p.id?"Confirmer la suppression définitive":"Supprimer l'opération"}</button></section>`:""}`;
 }
 
