@@ -32,6 +32,15 @@ Au lancement, l'accueil affiche le logo, **Créer un nouveau DGD**, **Ouvrir un 
 des fichiers récents (un clic pour rouvrir, « × » pour retirer de la liste). **Fichier › Fermer le dossier**
 (Ctrl+W) ou le bouton « ← Accueil » y ramène. Un double-clic sur un `.dgd` ouvre directement le dossier.
 
+## PV de réception
+
+Menu **Réception › PV de réception** : un PV par lot (ou tous corps d'état). On y saisit la visite
+(date, heure, lieu, date d'effet), les personnes présentes (pré-remplissage maître d'ouvrage, maître d'œuvre,
+entreprise), la décision (sans réserve, avec réserves, refus et ses motifs), la liste des réserves avec
+leur délai et leur date de levée, et des observations. **Générer le PV (PDF)** produit le procès-verbal A4
+à signer (art. 1792-6 du Code civil), avec les parties, le marché, les garanties, la retenue de garantie
+et, en annexe, la liste des réserves. Les PV sont enregistrés dans le fichier `.dgd`.
+
 ## Données
 
 - **Dossier AGOA DGD** : un seul fichier **`.dgd`** par dossier, à placer dans

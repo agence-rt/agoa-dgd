@@ -1,5 +1,6 @@
 # Déploiements AGOA DGD
 
+- **n°9** — v1.9.0 — 2026-11-12 — Nouvelle page PV de réception : saisie de la visite, des présents, de la décision et des réserves par lot, et génération du procès-verbal A4 à signer avec annexe des réserves
 - **n°8** — v1.8.0 — 2026-10-08 — Textes gris passés en noir ; rouge plus franc ; impression A4 en taille réelle avec lignes comptables en 12 pt
 - **n°7** — v1.7.0 — 2026-10-08 — Textes agrandis pour une meilleure lisibilité des lignes comptables ; contenu plus large sur grands écrans ; désignation complète au survol
 - **n°6** — v1.6.0 — 2026-10-08 — Un DGD = une opération : un nouveau DGD ouvre directement la fiche de l'opération (sans page de création), un DGD existant s'ouvre directement sur sa synthèse

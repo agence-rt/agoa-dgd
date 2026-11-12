@@ -235,6 +235,52 @@ html.printing body.pdf .barrow .val b{font-size:15px}
 .banner span{flex:1;min-width:240px}
 .filechip{font-size:13px;color:var(--muted);border:1px solid var(--line);border-radius:6px;padding:5px 10px;background:var(--surface);cursor:pointer;max-width:340px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .filechip:hover{color:var(--ink);border-color:var(--muted)}
+/* ---------- PV de réception : page de saisie ---------- */
+.field textarea,.pvta{width:100%;border:1px solid var(--line);background:var(--sunk);border-radius:5px;padding:7px 9px;font:inherit;color:inherit;resize:vertical;min-height:64px}
+.field textarea:focus,.pvta:focus{background:var(--surface);border-color:var(--accent);outline:none}
+.field.wide{grid-column:1/-1}
+.pvparties{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px 18px;margin:0}
+.pvparties div{border-left:3px solid var(--line);padding:2px 0 2px 10px}
+.pvparties dt{font-size:12.5px;color:var(--muted)}
+.pvparties dd{margin:2px 0 0;font-weight:600}
+.pvdec{display:flex;gap:10px;flex-wrap:wrap}
+.pvdec label{display:flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:8px;padding:10px 14px;cursor:pointer;background:var(--surface)}
+.pvdec label.on{border-color:var(--accent);background:var(--accent-soft);font-weight:600}
+.pvdec label.on.refus{border-color:var(--neg);background:var(--neg-soft)}
+.pvdec input{accent-color:var(--accent)}
+.pvlist{display:flex;flex-direction:column;gap:8px}
+.pvitem{display:flex;align-items:center;gap:14px;border:1px solid var(--line);border-radius:8px;padding:12px 14px;background:var(--surface);cursor:pointer;text-align:left;width:100%}
+.pvitem:hover{border-color:var(--accent)}
+.pvitem b{display:block}
+.pvitem small{color:var(--muted)}
+.pvitem .sp{flex:1}
+tr.levee td input:not([type=date]){text-decoration:line-through}
+/* ---------- PV de réception : document imprimé ---------- */
+.pvdoc{width:700px;margin:0 auto;color:#000;font-family:Arial,"Helvetica Neue",Helvetica,sans-serif;font-size:13.5px;line-height:1.32;background:#fff}
+.pvdoc *{font-stretch:100%!important;letter-spacing:normal!important}
+.pvdoc .dh{display:flex;justify-content:space-between;align-items:flex-start;gap:20px;border-bottom:2px solid #000;padding-bottom:8px}
+.pvdoc .dh img{max-height:70px;max-width:220px;object-fit:contain}
+.pvdoc .dh .arch{font-size:12.5px}
+.pvdoc .dh .op{text-align:right;font-size:12.5px}
+.pvdoc .dh .op b{font-size:15px;display:block}
+.pvdoc h1{font-size:20px;text-align:center;margin:14px 0 2px;letter-spacing:.02em!important}
+.pvdoc .ref{text-align:center;font-size:12.5px;margin-bottom:8px}
+.pvdoc h2{font-size:13.5px;text-transform:uppercase;margin:10px 0 4px;border-bottom:1px solid #000;padding-bottom:2px}
+.pvdoc table{width:100%;border-collapse:collapse;font-size:13.5px}
+.pvdoc th,.pvdoc td{border:1px solid #000;padding:3px 7px;text-align:left;vertical-align:top;color:#000}
+.pvdoc th{background:#EDEDED;font-weight:700;font-size:12.5px}
+.pvdoc table.kv th{width:190px;background:#F4F4F4;font-size:13px}
+.pvdoc .n{text-align:right;white-space:nowrap}
+.pvdoc p{margin:5px 0}
+.pvdoc .box{display:flex;gap:10px;align-items:flex-start;margin:4px 0}
+.pvdoc .box i{flex:0 0 14px;height:14px;border:1.5px solid #000;margin-top:3px;font-style:normal;font-size:12px;line-height:12px;text-align:center;font-weight:700}
+.pvdoc .sign{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:10px}
+.pvdoc .sign div{border:1px solid #000;min-height:92px;padding:6px 8px;font-size:12.5px}
+.pvdoc .sign b{display:block;font-size:13px}
+.pvdoc .annexe{break-before:page}
+.pvdoc .sigblock{break-inside:avoid}
+.pvdoc tr,.pvdoc .sign,.pvdoc .box{break-inside:avoid}
+.pvdoc h2{break-after:avoid}
 .pdf-title{font-stretch:80%;font-weight:750;font-size:26px;margin:0 0 14px}
 body.pdf{--paper:#FFFFFF;background:#FFFFFF}
 body.pdf .wrap{width:1120px;max-width:none;padding:0}
@@ -371,6 +417,7 @@ function newProject(){
       {id:uid(),libelle:"Échéance 1",pct:0.30},{id:uid(),libelle:"Échéance 2",pct:0.20},
       {id:uid(),libelle:"Échéance 3",pct:0.20},{id:uid(),libelle:"Échéance 4",pct:0.20},
       {id:uid(),libelle:"Échéance 5",pct:0.10}], factures:[]},
+    receptions:[],
     updatedAt:Date.now()
   };
 }
@@ -510,7 +557,7 @@ function cur(){ return S.projects[S.view.pid]; }
 /* ---------- rendu ---------- */
 function requestRender(){
   const a=document.activeElement;
-  if(a && a.matches && a.matches("input,select") && a.dataset.p){ S.pendingRender=true; return; }
+  if(a && a.matches && a.matches("input,select,textarea") && a.dataset.p){ S.pendingRender=true; return; }
   render();
 }
 function render(){
@@ -580,6 +627,8 @@ function projectView(p){
     ${S.canWrite?`<button class="add" data-act="addlot">+ Ajouter un lot</button>`:""}
     <div class="grp">Maîtrise d'œuvre</div>
     ${navBtn("archi","Architecte")}
+    <div class="grp">Réception</div>
+    <button data-act="tab" data-tab="recep" aria-current="${tab==="recep"||tab.startsWith("pv:")}"><span class="ln"><span>PV de réception</span><small>${(p.receptions||[]).length||""}</small></span></button>
     <div class="grp">Opération</div>
     ${navBtn("infos","Informations")}
   </nav>`;
@@ -587,8 +636,10 @@ function projectView(p){
   if(tab==="synth") body=synthView(p,C);
   else if(tab==="archi") body=archiView(p,C);
   else if(tab==="infos") body=infosView(p);
+  else if(tab==="recep") body=recepListView(p);
+  else if(tab.startsWith("pv:")){ const pv=(p.receptions||[]).find(x=>x.id===tab.slice(3)); body = pv? pvView(p,pv) : recepListView(p); }
   else if(tab.startsWith("lot:")){ const l=p.lots.find(x=>x.id===tab.slice(4)); body = l? lotView(p,l) : synthView(p,C); }
-  const tabLabel = tab==="synth"?"Synthèse":tab==="archi"?"Honoraires architecte":tab==="infos"?"Informations de l'opération":(()=>{const l=p.lots.find(x=>"lot:"+x.id===tab);return l?`Lot ${l.num} — ${l.intitule}${l.entreprise?" ("+l.entreprise+")":""}`:"";})();
+  const tabLabel = tab==="synth"?"Synthèse":tab==="archi"?"Honoraires architecte":tab==="infos"?"Informations de l'opération":(tab==="recep"||tab.startsWith("pv:"))?"PV de réception":(()=>{const l=p.lots.find(x=>"lot:"+x.id===tab);return l?`Lot ${l.num} — ${l.intitule}${l.entreprise?" ("+l.entreprise+")":""}`:"";})();
   if(S.pdf && !tab.startsWith("lot:")) body=`<div class="pdf-title">${esc(tabLabel)}</div>`+body;
   return `<header class="phead ${tab==="synth"?"":"compact"}">
     <div class="title"><div class="kicker">Décompte général ${p.statut==="DGD signé"?"définitif":"provisoire"}</div>
@@ -918,6 +969,167 @@ async function exportXlsx(){
   if(r&&r.ok) toast("Export Excel enregistré"); else if(r&&r.error) toast("L'export a échoué : "+r.error);
 }
 
+/* ---------- PV de réception ---------- */
+const PV_DEC={sans:"Réception sans réserve",avec:"Réception avec réserves",refus:"Refus de réception"};
+function ta(path,val,extra=""){ return `<textarea class="pvta" data-p="${esc(path)}" data-t="text" ${extra} ${ro()}>${esc(val||"")}</textarea>`; }
+function newPv(p,lotId){
+  const today=new Date().toISOString().slice(0,10);
+  return {id:uid(), lotId:lotId||(p.lots[0]&&p.lots[0].id)||"", date:today, heure:"", lieu:p.adresse||"", dateEffet:today,
+    decision:"avec", motifs:"", observations:"", retenue:true, presents:[], reserves:[]};
+}
+function pvLot(p,pv){ return p.lots.find(l=>l.id===pv.lotId)||null; }
+function pvTitle(p,pv){ const l=pvLot(p,pv); return l?`Lot ${l.num}${l.intitule?" — "+l.intitule:""}`:"Tous corps d'état"; }
+function pvStatus(pv){
+  if(pv.decision==="refus") return `<span class="tag neg">Refusée</span>`;
+  if(pv.decision==="sans") return `<span class="tag ok">Sans réserve</span>`;
+  const n=(pv.reserves||[]).length, lv=(pv.reserves||[]).filter(r=>r.levee).length;
+  return n&&lv===n?`<span class="tag ok">Réserves levées (${n})</span>`:`<span class="tag warn">${n-lv} réserve${n-lv>1?"s":""} à lever</span>`;
+}
+function recepListView(p){
+  const list=p.receptions||[];
+  return `<section class="panel">
+    <div class="panel-head"><h2>Procès-verbaux de réception</h2>${S.canWrite?`<button class="btn primary" data-act="addpv">+ Nouveau PV de réception</button>`:""}</div>
+    ${list.length?`<div class="pvlist">${list.map(pv=>{ const l=pvLot(p,pv);
+      return `<button class="pvitem" data-act="tab" data-tab="pv:${pv.id}"><span><b>${esc(pvTitle(p,pv))}</b><small>${esc((l&&l.entreprise)||"Entreprise non renseignée")} · visite du ${fmtD(pv.date)||"—"}</small></span><span class="sp"></span>${pvStatus(pv)}</button>`;}).join("")}</div>`
+      :`<p class="note" style="margin:6px 0 0">Aucun PV pour l'instant. Créez-en un par lot (ou par entreprise) à la visite de réception.</p>`}
+  </section>`;
+}
+function pvView(p,pv){
+  const base=`receptions.${pv.id}`, l=pvLot(p,pv), c=l?lotCalc(l):null;
+  const aes=l?l.engagements.filter(e=>e.type==="AE").map(e=>[e.numAE,e.code].filter(Boolean).join(" ")+(e.date?" du "+fmtD(e.date):"")).filter(x=>x.trim()).join(" ; "):"";
+  const dec=pv.decision||"avec";
+  const presRows=(pv.presents||[]).map(x=>`<tr>
+      <td>${inp(`${base}.presents.${x.id}.nom`,x.nom)}</td><td>${inp(`${base}.presents.${x.id}.qualite`,x.qualite)}</td><td>${inp(`${base}.presents.${x.id}.societe`,x.societe)}</td>
+      <td>${S.canWrite?`<button class="x" aria-label="Supprimer la ligne" data-act="delrow" data-p="${base}.presents.${x.id}">×</button>`:""}</td></tr>`).join("");
+  const resRows=(pv.reserves||[]).map((r,i)=>`<tr class="${r.levee?"levee":""}">
+      <td class="n" style="color:var(--muted)">${i+1}</td>
+      <td>${inp(`${base}.reserves.${r.id}.loc`,r.loc,"text","",`title="${esc(r.loc||"")}"`)}</td>
+      <td>${inp(`${base}.reserves.${r.id}.desc`,r.desc,"text","",`title="${esc(r.desc||"")}"`)}</td>
+      <td>${inp(`${base}.reserves.${r.id}.delai`,r.delai,"date")}</td>
+      <td>${inp(`${base}.reserves.${r.id}.levee`,r.levee,"date")}</td>
+      <td>${S.canWrite?`<button class="x" aria-label="Supprimer la ligne" data-act="delrow" data-p="${base}.reserves.${r.id}">×</button>`:""}</td></tr>`).join("");
+  const nRes=(pv.reserves||[]).length, nLev=(pv.reserves||[]).filter(r=>r.levee).length;
+  return `
+  <div class="lothead"><div class="ltitle"><h2 style="margin-left:0">PV de réception — ${esc(pvTitle(p,pv))}</h2><div class="ent">${esc((l&&l.entreprise)||"")}</div></div>
+    <div class="lact" style="display:flex;flex-direction:column;align-items:flex-end;gap:8px">
+      <button class="btn primary" data-act="pvpdf" data-id="${pv.id}">Générer le PV (PDF)</button>
+      ${S.canWrite?`<button class="btn small danger" data-act="delpv" data-id="${pv.id}">${S.confirmDel===pv.id?"Confirmer la suppression du PV":"Supprimer le PV"}</button>`:""}
+    </div></div>
+  <section class="panel">
+    <h2 style="margin-bottom:12px">Visite de réception</h2>
+    <div class="fields">
+      <div class="field"><label>Lot réceptionné</label><select data-p="${base}.lotId" data-t="text" ${ro()}>${p.lots.map(x=>`<option value="${x.id}" ${x.id===pv.lotId?"selected":""}>Lot ${esc(x.num)} ${esc(x.intitule)}${x.entreprise?" — "+esc(x.entreprise):""}</option>`).join("")}<option value="" ${pv.lotId?"":"selected"}>Tous corps d'état</option></select></div>
+      <div class="field"><label>Date de la visite</label>${inp(`${base}.date`,pv.date,"date")}</div>
+      <div class="field"><label>Heure</label>${inp(`${base}.heure`,pv.heure)}</div>
+      <div class="field"><label>Lieu</label>${inp(`${base}.lieu`,pv.lieu)}</div>
+      <div class="field"><label>Date d'effet de la réception</label>${inp(`${base}.dateEffet`,pv.dateEffet,"date")}</div>
+    </div>
+  </section>
+  <section class="panel">
+    <h2 style="margin-bottom:10px">Parties</h2>
+    <dl class="pvparties">
+      <div><dt>Maître d'ouvrage</dt><dd>${esc(p.moa||"—")}</dd></div>
+      <div><dt>Gestionnaire</dt><dd>${esc(p.gestionnaire||"—")}</dd></div>
+      <div><dt>Maître d'œuvre</dt><dd>${esc(p.architecte||"—")}</dd></div>
+      <div><dt>Entreprise titulaire</dt><dd>${esc((l&&l.entreprise)||"—")}</dd></div>
+      <div><dt>Marché</dt><dd>${esc(aes||"—")}</dd></div>
+      <div><dt>Montant du marché actualisé</dt><dd>${c?fmtE(c.marche)+" HT · "+fmtE(c.marcheT)+" TTC":"—"}</dd></div>
+    </dl>
+    <p class="note" style="margin:10px 0 0">Ces informations viennent des onglets Informations et du lot.</p>
+  </section>
+  <section class="panel">
+    <div class="panel-head"><h2>Personnes présentes</h2>${S.canWrite?`<button class="btn small" data-act="pvprefill" data-id="${pv.id}">Pré-remplir maître d'ouvrage, maître d'œuvre, entreprise</button>`:""}</div>
+    <div class="tscroll"><table class="fit">
+      <thead><tr><th>Nom</th><th>Qualité</th><th>Société</th><th class="c-x"></th></tr></thead>
+      <tbody>${presRows||`<tr><td colspan="4" class="note" style="padding:12px 6px">Aucune personne saisie.</td></tr>`}</tbody></table></div>
+    ${S.canWrite?`<div class="addrow"><button class="btn small" data-act="pvaddpres" data-id="${pv.id}">+ Personne présente</button></div>`:""}
+  </section>
+  <section class="panel">
+    <h2 style="margin-bottom:12px">Décision du maître d'ouvrage</h2>
+    <div class="pvdec" role="radiogroup">${Object.entries(PV_DEC).map(([k,v])=>`<label class="${dec===k?"on":""} ${k==="refus"?"refus":""}"><input type="radio" name="dec-${pv.id}" data-act="pvdec" data-id="${pv.id}" data-v="${k}" ${dec===k?"checked":""} ${ro()}>${v}</label>`).join("")}</div>
+    ${dec==="refus"?`<div class="field wide" style="margin-top:12px"><label>Motifs du refus</label>${ta(`${base}.motifs`,pv.motifs)}</div>`:""}
+    ${dec!=="refus"?`<label style="display:flex;gap:8px;align-items:center;margin-top:14px"><input type="checkbox" data-p="${base}.retenue" data-t="bool" ${pv.retenue?"checked":""} ${ro()}> Mentionner la retenue de garantie de 5 %${c?" ("+fmtE(c.marcheT*0.05)+" TTC)":""}</label>`:""}
+  </section>
+  ${dec==="avec"?`<section class="panel">
+    <div class="panel-head"><h2>Réserves</h2><span class="note">${nRes} réserve${nRes>1?"s":""} · ${nLev} levée${nLev>1?"s":""}</span></div>
+    <div class="tscroll"><table class="fit">
+      <thead><tr><th style="width:34px" class="n">N°</th><th style="width:22%">Localisation</th><th>Description</th><th class="c-date">À lever avant le</th><th class="c-date">Levée le</th><th class="c-x"></th></tr></thead>
+      <tbody>${resRows||`<tr><td colspan="6" class="note" style="padding:12px 6px">Aucune réserve saisie.</td></tr>`}</tbody></table></div>
+    ${S.canWrite?`<div class="addrow"><button class="btn small" data-act="pvaddres" data-id="${pv.id}">+ Réserve</button></div>`:""}
+  </section>`:""}
+  <section class="panel">
+    <h2 style="margin-bottom:10px">Observations</h2>
+    ${ta(`${base}.observations`,pv.observations)}
+  </section>`;
+}
+function pvDocument(p,pv){
+  const l=pvLot(p,pv), c=l?lotCalc(l):null, dec=pv.decision||"avec";
+  const aes=l?l.engagements.filter(e=>e.type==="AE").map(e=>[e.numAE,e.code].filter(Boolean).join(" ")+(e.date?" du "+fmtD(e.date):"")).filter(x=>x.trim()).join(" ; "):"";
+  const box=(on,txt)=>`<div class="box"><i>${on?"X":""}</i><div>${txt}</div></div>`;
+  const res=pv.reserves||[];
+  const kv=(k,v)=>`<tr><th>${k}</th><td>${v||"&nbsp;"}</td></tr>`;
+  return `<div class="pvdoc">
+    <div class="dh"><div class="arch">${p.archLogo?`<img src="${esc(p.archLogo)}" alt=""><br>`:""}${esc(p.architecte||"")}</div>
+      <div class="op"><b>${esc(p.nom||"")}</b>${esc(p.adresse||"")}${p.code?"<br>Réf. "+esc(p.code):""}</div></div>
+    <h1>PROCÈS-VERBAL DE RÉCEPTION DES TRAVAUX</h1>
+    <div class="ref">Article 1792-6 du Code civil — ${esc(pvTitle(p,pv))}</div>
+    <h2>Opération et marché</h2>
+    <table class="kv">
+      ${kv("Opération",esc([p.nom,p.adresse].filter(Boolean).join(" — ")))}
+      ${kv("Objet des travaux",esc(p.objet||""))}
+      ${kv("Maître d'ouvrage",esc([p.moa,p.gestionnaire?"représenté par "+p.gestionnaire:""].filter(Boolean).join(", ")))}
+      ${kv("Maître d'œuvre",esc(p.architecte||""))}
+      ${kv("Entreprise titulaire",esc((l&&l.entreprise)||""))}
+      ${kv("Lot",esc(pvTitle(p,pv)))}
+      ${kv("Marché",esc(aes))}
+      ${c?kv("Montant du marché actualisé",`${fmtE(c.marche)} HT — ${fmtE(c.marcheT)} TTC`):""}
+    </table>
+    <h2>Visite de réception</h2>
+    <p>Le maître d'ouvrage, après avoir procédé le <b>${fmtD(pv.date)||"……………"}</b>${pv.heure?" à "+esc(pv.heure):""}${pv.lieu?", sur le site "+esc(pv.lieu):""}, à la visite des travaux exécutés au titre du marché désigné ci-dessus, en présence des personnes suivantes :</p>
+    <table><thead><tr><th>Nom</th><th>Qualité</th><th>Société</th></tr></thead>
+      <tbody>${(pv.presents||[]).length?(pv.presents||[]).map(x=>`<tr><td>${esc(x.nom||"")}</td><td>${esc(x.qualite||"")}</td><td>${esc(x.societe||"")}</td></tr>`).join(""):`<tr><td>&nbsp;</td><td></td><td></td></tr><tr><td>&nbsp;</td><td></td><td></td></tr>`}</tbody></table>
+    <h2>Décision</h2>
+    <p>Sur proposition du maître d'œuvre, le maître d'ouvrage déclare :</p>
+    ${box(dec==="sans","prononcer la réception des travaux <b>sans réserve</b> ;")}
+    ${box(dec==="avec",`prononcer la réception des travaux <b>avec les réserves</b> figurant en annexe${res.length?" ("+res.length+" réserve"+(res.length>1?"s":"")+")":""}, que l'entreprise s'engage à lever dans les délais indiqués ;`)}
+    ${box(dec==="refus","<b>refuser la réception</b> des travaux pour les motifs suivants :"+(dec==="refus"&&pv.motifs?`<br>${esc(pv.motifs).replace(/\n/g,"<br>")}`:""))}
+    ${dec!=="refus"?`<p>La réception prend effet à la date du <b>${fmtD(pv.dateEffet||pv.date)||"……………"}</b>. Elle fait courir les délais de la garantie de parfait achèvement (un an), de la garantie de bon fonctionnement (deux ans) et de la garantie décennale (dix ans).</p>
+    ${pv.retenue?`<p>La retenue de garantie de 5 %${c?", soit "+fmtE(c.marcheT*0.05)+" TTC,":""} sera libérée à l'expiration du délai d'un an à compter de la réception, sauf opposition motivée du maître d'ouvrage (loi n° 71-584 du 16 juillet 1971).</p>`:""}`:""}
+    ${pv.observations?`<h2>Observations</h2><p>${esc(pv.observations).replace(/\n/g,"<br>")}</p>`:""}
+    <div class="sigblock"><h2>Signatures</h2>
+    <p>Fait le ${fmtD(pv.date)||"……………"}, en trois exemplaires.</p>
+    <div class="sign"><div><b>Le maître d'ouvrage</b>${esc(p.moa||"")}</div><div><b>L'entreprise</b>${esc((l&&l.entreprise)||"")}<br>Lu et approuvé</div><div><b>Le maître d'œuvre</b>${esc(p.architecte||"")}</div></div></div>
+    ${dec==="avec"?`<div class="annexe"><h2>Annexe — Liste des réserves</h2>
+      <table><thead><tr><th style="width:34px">N°</th><th style="width:24%">Localisation</th><th>Description</th><th style="width:96px">À lever avant le</th><th style="width:84px">Levée le</th></tr></thead>
+      <tbody>${res.length?res.map((r,i)=>`<tr><td class="n">${i+1}</td><td>${esc(r.loc||"")}</td><td>${esc(r.desc||"")}</td><td>${fmtD(r.delai)}</td><td>${fmtD(r.levee)}</td></tr>`).join(""):`<tr><td colspan="5">Aucune réserve saisie.</td></tr>`}</tbody></table>
+      <div class="sign" style="grid-template-columns:repeat(3,1fr);margin-top:16px"><div style="min-height:80px"><b>Le maître d'ouvrage</b></div><div style="min-height:80px"><b>L'entreprise</b></div><div style="min-height:80px"><b>Le maître d'œuvre</b></div></div>
+    </div>`:""}
+  </div>`;
+}
+async function exportPvPdf(pvId){
+  const p=cur(); const pv=p&&(p.receptions||[]).find(x=>x.id===pvId); if(!pv||S.pdfBusy) return;
+  await flushSave();
+  S.pdfBusy=true;
+  const root=document.documentElement, prevTheme=root.dataset.theme, prevScroll=window.scrollY;
+  const hadViewer=document.body.classList.contains("viewing");
+  const l=pvLot(p,pv);
+  try{
+    document.body.classList.remove("viewing");
+    root.dataset.theme="light"; root.classList.add("printing");
+    app.innerHTML=pvDocument(p,pv);
+    if(document.fonts&&document.fonts.ready) await document.fonts.ready;
+    await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
+    const name=`PV de réception - ${p.nom} - ${l?"Lot "+l.num+(l.entreprise?" "+l.entreprise:""):"TCE"}.pdf`.replace(/[\\/:*?"<>|]/g,"-");
+    const r=await window.desktop.printPdf({defaultName:name, footerLeft:`${p.nom} — PV de réception — ${pvTitle(p,pv)}`, scale:1});
+    if(r&&r.error) toast("Le PDF n'a pas pu être créé : "+r.error);
+  } finally {
+    root.classList.remove("printing");
+    if(hadViewer) document.body.classList.add("viewing");
+    if(prevTheme===undefined) delete root.dataset.theme; else root.dataset.theme=prevTheme;
+    render(); window.scrollTo(0,prevScroll); S.pdfBusy=false;
+  }
+}
+
 /* ---------- export PDF (moteur d'impression natif : texte vectoriel) ---------- */
 async function exportPdf(all){
   const p=cur(); if(!p||S.pdfBusy) return; S.pdfBusy=true;
@@ -1106,7 +1318,7 @@ app.addEventListener("click", e=>{
 });
 function handleAct(b){
   const act=b.dataset.act, p=cur();
-  if(act!=="dellot"&&act!=="delproj") S.confirmDel=null;
+  if(act!=="dellot"&&act!=="delproj"&&act!=="delpv") S.confirmDel=null;
   switch(act){
     case "lotmode": { const l=p.lots.find(x=>x.id===b.dataset.id); if(l){ l.affichage=b.dataset.v; persist(p);} break; }
     case "addpdf": pickPdf(b.dataset.p); return;
@@ -1133,6 +1345,15 @@ function handleAct(b){
     case "logo": { const fi=document.getElementById("logofile"); fi.dataset.lot=b.dataset.id; fi.value=""; fi.click(); return; }
     case "dellogo": { if(b.dataset.id==="archi"){ delete p.archLogo; persist(p); break; } const l=p.lots.find(x=>x.id===b.dataset.id); if(l){ delete l.logo; persist(p);} break; }
     case "addlot": { const n=p.lots.length? Math.max(...p.lots.map(l=>parseInt(l.num)||0))+1 : 1; const l=newLot(n); p.lots.push(l); S.view.tab="lot:"+l.id; persist(p); break; }
+    case "addpv": { if(!p.receptions) p.receptions=[]; const pv=newPv(p); p.receptions.push(pv); S.view.tab="pv:"+pv.id; persist(p); break; }
+    case "delpv": { if(S.confirmDel!==b.dataset.id){ S.confirmDel=b.dataset.id; break; } p.receptions=(p.receptions||[]).filter(x=>x.id!==b.dataset.id); S.confirmDel=null; S.view.tab="recep"; persist(p); break; }
+    case "pvaddpres": { const pv=(p.receptions||[]).find(x=>x.id===b.dataset.id); if(pv){ pv.presents.push({id:uid(),nom:"",qualite:"",societe:""}); persist(p);} break; }
+    case "pvaddres": { const pv=(p.receptions||[]).find(x=>x.id===b.dataset.id); if(pv){ const last=pv.reserves[pv.reserves.length-1]; pv.reserves.push({id:uid(),loc:last?last.loc:"",desc:"",delai:last?last.delai:"",levee:""}); persist(p);} break; }
+    case "pvprefill": { const pv=(p.receptions||[]).find(x=>x.id===b.dataset.id); if(pv){ const l=pvLot(p,pv); const have=new Set(pv.presents.map(x=>x.qualite));
+        [["Représentant du maître d'ouvrage",p.gestionnaire||p.moa],["Maître d'œuvre",p.architecte],["Entreprise titulaire",l&&l.entreprise]].forEach(([q,soc])=>{ if(!have.has(q)) pv.presents.push({id:uid(),nom:"",qualite:q,societe:soc||""}); });
+        persist(p);} break; }
+    case "pvdec": { const pv=(p.receptions||[]).find(x=>x.id===b.dataset.id); if(pv&&S.canWrite){ pv.decision=b.dataset.v; persist(p);} break; }
+    case "pvpdf": exportPvPdf(b.dataset.id); return;
     case "dellot": { if(S.confirmDel!==b.dataset.id){ S.confirmDel=b.dataset.id; break; } p.lots=p.lots.filter(l=>l.id!==b.dataset.id); S.confirmDel=null; S.view.tab="synth"; persist(p); break; }
     case "delproj": { if(S.confirmDel!==p.id){ S.confirmDel=p.id; break; } delete S.projects[p.id]; S.confirmDel=null; S.view={pid:null,tab:"synth"}; persist(null); break; }
     case "addeng": { const l=p.lots.find(x=>x.id===b.dataset.id); const prevT=l.engagements.length?l.engagements[l.engagements.length-1].tva:0.1;
